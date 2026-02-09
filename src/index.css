@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root{
+  --ubuntu-sans: 'Ubuntu Sans', sans-serif;
+  --open-sans: 'Open Sans', sans-serif;
+  --archivo-black: 'Archivo Black', sans-serif;
+  --bricolage-grotesque: 'Bricolage Grotesque', sans-serif;
+}
+
+html{
+  scroll-behavior: smooth;
+}
+
+body{
+  font-family: var(--ubuntu-sans);
+}
