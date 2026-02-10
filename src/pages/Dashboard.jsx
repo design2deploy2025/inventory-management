@@ -9,6 +9,8 @@ import Hotspots from '../dashboard/pages/Hotspots'
 import Checklists from '../dashboard/pages/Checklists'
 import Themes from '../dashboard/pages/Themes'
 import Settings from '../dashboard/pages/Settings'
+import MainTable from '../dashboard/MainTable'
+import ProductDetails from '../dashboard/ProductDetails'
 
 const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState('dashboard')
@@ -18,6 +20,10 @@ const Dashboard = () => {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardHome />
+      case 'orders':
+        return <MainTable />
+      case 'products':
+        return <ProductDetails   />
       case 'performance':
         return <Performance />
       case 'guides':
@@ -36,12 +42,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* Left Sidebar */}
+    <div className="flex h-screen overflow-hidden bg-black">
+      {/* Left Sidebar - Fixed */}
       <SideBar currentPage={currentPage} onPageChange={setCurrentPage} />
       
-      {/* Right Panel - Main Content */}
-      <main className="flex-1 overflow-auto">
+      {/* Right Panel - Scrollable */}
+      <main className="flex-1 overflow-auto bg-[#0A0A0A]">
         {renderPage()}
       </main>
     </div>
@@ -49,3 +55,4 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+

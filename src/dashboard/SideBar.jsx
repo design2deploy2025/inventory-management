@@ -1,9 +1,11 @@
 import React from 'react'
+import MainTable from './MainTable'
 
 const SideBar = ({ currentPage, onPageChange }) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', section: 'analytics' },
-    { id: 'performance', label: 'Performance', section: 'analytics' },
+    { id: 'overview', label: 'Overview', section: 'analytics' },
+    { id: 'orders', label: 'Orders', section: 'analytics' },
+    { id: 'products', label: 'Products', section: 'analytics' },
     { id: 'guides', label: 'Guides', section: 'content' },
     { id: 'hotspots', label: 'Hotspots', section: 'content' },
     { id: 'checklists', label: 'Checklists', section: 'content' },
@@ -12,25 +14,25 @@ const SideBar = ({ currentPage, onPageChange }) => {
   ]
 
   const getLinkClass = (itemId) => {
-    const baseClass = "flex items-center px-3 py-2 transition-colors duration-300 transform rounded-lg"
-    const activeClass = "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
-    const inactiveClass = "text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
+    const baseClass = "flex items-center px-3 py-2.5 transition-all duration-300 rounded-lg"
+    const activeClass = "bg-white/10 text-white border border-indigo-500/30"
+    const inactiveClass = "text-slate-300 hover:bg-white/5 hover:text-white"
     
     return `${baseClass} ${currentPage === itemId ? activeClass : inactiveClass}`
   }
 
   return (
-    <div>
-      <aside className="flex flex-col w-64 h-screen px-5 py-8 overflow-y-auto bg-white border-r rtl:border-r-0 rtl:border-l dark:bg-gray-900 dark:border-gray-700">
+    <div className="flex-none w-64 h-screen">
+      <aside className="flex flex-col w-full h-full px-5 py-8 bg-black border-r border-gray-800">
         <a href="#">
-            <img className="w-auto h-7" src="https://merakiui.com/images/logo.svg" alt=""/>
+            <h2 className="text-xl font-bold text-white">InstaStock</h2>
         </a>
 
         <div className="flex flex-col justify-between flex-1 mt-6">
             <nav className="-mx-3 space-y-6">
                 {/* Analytics Section */}
                 <div className="space-y-3">
-                    <label className="px-3 text-xs text-gray-500 uppercase dark:text-gray-400">analytics</label>
+                    <label className="px-3 text-xs text-slate-500 uppercase tracking-wider">analytics</label>
 
                     <button 
                       onClick={() => onPageChange('dashboard')}
@@ -39,23 +41,33 @@ const SideBar = ({ currentPage, onPageChange }) => {
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.148 2.148A12.061 12.061 0 0116.5 7.605" />
                         </svg>
-                        <span className="mx-2 text-sm font-medium">Dashboard</span>
+                        <span className="mx-2 text-sm font-medium">Overview</span>
                     </button>
 
                     <button 
-                      onClick={() => onPageChange('performance')}
-                      className={getLinkClass('performance')}
+                      onClick={() => onPageChange('orders')}
+                      className={getLinkClass('orders')}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                         </svg>
-                        <span className="mx-2 text-sm font-medium">Performance</span>
+                        <span className="mx-2 text-sm font-medium">Orders</span>
+                    </button>
+
+                    <button 
+                      onClick={() => onPageChange('products')}
+                      className={getLinkClass('products')}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                        </svg>
+                        <span className="mx-2 text-sm font-medium">Products</span>
                     </button>
                 </div>
 
                 {/* Content Section */}
                 <div className="space-y-3">
-                    <label className="px-3 text-xs text-gray-500 uppercase dark:text-gray-400">content</label>
+                    <label className="px-3 text-xs text-slate-500 uppercase tracking-wider">content</label>
 
                     <button 
                       onClick={() => onPageChange('guides')}
@@ -90,7 +102,7 @@ const SideBar = ({ currentPage, onPageChange }) => {
 
                 {/* Customization Section */}
                 <div className="space-y-3">
-                    <label className="px-3 text-xs text-gray-500 uppercase dark:text-gray-400">Customization</label>
+                    <label className="px-3 text-xs text-slate-500 uppercase tracking-wider">Customization</label>
 
                     <button 
                       onClick={() => onPageChange('themes')}
@@ -107,7 +119,7 @@ const SideBar = ({ currentPage, onPageChange }) => {
                       className={getLinkClass('settings')}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.107-1.204l-.527-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <span className="mx-2 text-sm font-medium">Setting</span>
@@ -121,3 +133,4 @@ const SideBar = ({ currentPage, onPageChange }) => {
 }
 
 export default SideBar
+

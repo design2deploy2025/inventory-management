@@ -7,10 +7,12 @@ import { How } from '../components/how it works/How'
 import Features from '../components/features/Features'
 import Contact from '../components/contact/Contact'
 import Pricing from '../components/pricing/Pricing'
+import Navbar from '../components/navbar/Navbar'
 
 const Home = () => {
   return (
     <div>
+      <Navbar/>
       <Hero/>
       <Features/>
       <How/>
@@ -18,7 +20,7 @@ const Home = () => {
       <Pricing/>
       <Team/>
       <Contact/>
-      {/* <Footer/> */}
+      <Footer/>
     </div>
   )
 }
