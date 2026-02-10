@@ -14,7 +14,7 @@ const Hero = () => {
         </p>
 
         <div className="flex items-center gap-3 mt-8 text-sm">
-          <a href="/signup" className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-full text-white">
+          <a href="#contact" className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 transition rounded-full text-white">
             <span>Start Free Trial</span>
             <svg
               width="24"

@@ -2,7 +2,7 @@
 
 const Features = () => {
   return (
-    <section className="bg-black">
+    <section className="bg-black" id="features">
       {/* Container */}
       <div className="mx-auto w-full max-w-7xl px-5 py-16 md:px-10 md:py-20">
         {/* Title */}

@@ -7,7 +7,7 @@ export function How() {
   ];
 
   return (
-    <section className="relative bg-black text-white bg-top bg-cover pb-32">
+    <section className="relative bg-black text-white bg-top bg-cover pb-32" id="how-it-works">
       {/* Container */}
       <div className="mx-auto w-full max-w-7xl px-5 py-12 md:px-10 md:py-16 lg:py-20">
         {/* Heading */}

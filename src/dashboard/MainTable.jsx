@@ -85,8 +85,11 @@ const MainTable = () => {
   const hasActiveFilters = searchTerm !== '' || orderStatusFilter !== 'All' || paymentStatusFilter !== 'All'
 
   return (
-    <div className="mt-6">
-      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6 text-white bg-gradient-to-r from-white to-[#748298] bg-clip-text text-transparent">
+        Orders Management
+      </h1>
+      <div className="mt-6">
         <div className="bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-800">

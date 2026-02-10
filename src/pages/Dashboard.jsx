@@ -11,6 +11,8 @@ import Themes from '../dashboard/pages/Themes'
 import Settings from '../dashboard/pages/Settings'
 import MainTable from '../dashboard/MainTable'
 import ProductDetails from '../dashboard/ProductDetails'
+import StatCards from '../dashboard/StatCards'
+import Analytics from '../dashboard/pages/Analytics'
 
 const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState('dashboard')
@@ -24,6 +26,10 @@ const Dashboard = () => {
         return <MainTable />
       case 'products':
         return <ProductDetails   />
+      case 'analytics':
+        return <Analytics   />
+      case 'customers':
+        return <MainTable   />
       case 'performance':
         return <Performance />
       case 'guides':

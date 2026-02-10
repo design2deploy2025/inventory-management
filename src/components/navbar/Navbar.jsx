@@ -28,10 +28,13 @@ const Navbar = () => {
               <a href="#how-it-works">How it Works</a>
             </li>
             <li className="hover:text-gray-300 transition">
-              <a href="/signup">Pricing</a>
+              <a href="#testimonials">Testimonials</a>
             </li>
             <li className="hover:text-gray-300 transition">
-              <a href="/signup">Help</a>
+              <a href="#pricing">Pricing</a>
+            </li>
+            <li className="hover:text-gray-300 transition">
+              <a href="#contact">Contact</a>
             </li>
 
             <button
@@ -71,9 +74,9 @@ const Navbar = () => {
 
           <div className="max-md:hidden flex items-center gap-4">
             <a href="/login" className="text-white hover:text-gray-300 transition font-medium">Login</a>
-            <a href="/signup" className="text-white px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 transition rounded-full font-medium">
+            {/* <a href="/signup" className="text-white px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 transition rounded-full font-medium">
               Get Started Free
-            </a>
+            </a> */}
           </div>
         </nav>
     </div>

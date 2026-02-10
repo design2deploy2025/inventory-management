@@ -31,11 +31,11 @@ export function Login() {
 		    <div className="flex items-center justify-center px-5 py-16 md:px-10 md:py-20 bg-black bg-[url(https://raw.githubusercontent.com/prebuiltui/prebuiltui/main/assets/hero/bg-gradient-4.svg)] bg-center bg-cover">
 		      <div className="max-w-md text-center">
 		        <h2 className="mb-8 text-3xl font-bold md:mb-12 md:text-5xl lg:mb-16 bg-gradient-to-r from-white to-[#748298] text-transparent bg-clip-text">
-		          Welcome Back
+		          Please Log In here
 		        </h2>
 		        {/* Form */}
 		        <div className="mx-auto mb-4 max-w-sm pb-4">
-		          <form name="login-form" method="get">
+		          <form name="signup-form" method="get">
 		            <div className="relative">
 		              <img alt="" src="https://assets.website-files.com/6458c625291a94a195e6cf3a/6458c625291a9455fae6cf89_EnvelopeSimple.svg" className="absolute left-5 top-3 inline-block" />
 		              <input type="email" className="mb-4 block h-9 w-full rounded-md border border-white/15 bg-white/5 px-3 py-6 pl-14 text-sm text-white placeholder:text-slate-400" placeholder="Email Address" required="" />
@@ -44,7 +44,7 @@ export function Login() {
 		              <img alt="" src="https://assets.website-files.com/6458c625291a94a195e6cf3a/6458c625291a946794e6cf8a_Lock-2.svg" className="absolute left-5 top-3 inline-block" />
 		              <input type="password" className="mb-4 block h-9 w-full rounded-md border border-white/15 bg-white/5 px-3 py-6 pl-14 text-sm text-white placeholder:text-slate-400" placeholder="Password (min 8 characters)" required="" />
 		            </div>
-            <label className="mb-6 flex items-center justify-start pb-12 pl-5 font-medium md:mb-10 lg:mb-1 text-slate-300">
+            {/* <label className="mb-6 flex items-center justify-start pb-12 pl-5 font-medium md:mb-10 lg:mb-1 text-slate-300">
 		              <input type="checkbox" name="checkbox" className="float-left mt-1" />
 		              <span className="ml-4 inline-block cursor-pointer text-sm" htmlFor="checkbox">
 		                I agree with the
@@ -52,16 +52,16 @@ export function Login() {
 		                  Terms & Conditions
 		                </a>
 		              </span>
-		            </label>
-		            <input type="submit" value="Login to InstaStock" className="inline-block w-full cursor-pointer items-center bg-indigo-600 hover:bg-indigo-700 transition px-6 py-3 text-center font-semibold text-white rounded-full" />
+		            </label> */}
+		            <input type="submit" value="Log In" className="inline-block w-full cursor-pointer items-center bg-indigo-600 hover:bg-indigo-700 transition px-6 py-3 text-center font-semibold text-white rounded-full" />
 		          </form>
 		        </div>
-		        <p className="text-sm text-slate-300 sm:text-sm">
-		          New to InstaStock?
-		          <a href="/signup" className="font-bold text-indigo-400">
-		            <span> </span> Start free trial
+		        {/* <p className="text-sm text-slate-300 sm:text-sm">
+		          Already have an account?
+		          <a href="/login" className="font-bold text-indigo-400">
+		            <span> </span> Login now
 		          </a>
-		        </p>
+		        </p> */}
 		      </div>
 		    </div>
 		  </div>
