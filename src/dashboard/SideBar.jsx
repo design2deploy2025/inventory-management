@@ -1,7 +1,12 @@
 import React from 'react'
 import MainTable from './MainTable'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const SideBar = ({ currentPage, onPageChange }) => {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
   const menuItems = [
     { id: 'overview', label: 'Overview', section: 'analytics' },
     { id: 'orders', label: 'Orders', section: 'analytics' },
@@ -17,6 +22,11 @@ const SideBar = ({ currentPage, onPageChange }) => {
     const inactiveClass = "text-slate-300 hover:bg-white/5 hover:text-white"
     
     return `${baseClass} ${currentPage === itemId ? activeClass : inactiveClass}`
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login')
   }
 
   return (
@@ -101,6 +111,17 @@ const SideBar = ({ currentPage, onPageChange }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <span className="mx-2 text-sm font-medium">Settings</span>
+                    </button>
+
+                    {/* Logout Button */}
+                    <button 
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-3 py-2.5 transition-all duration-300 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                        <span className="mx-2 text-sm font-medium">Logout</span>
                     </button>
                 </div>
             </nav>

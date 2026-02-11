@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from 'react'
+import OrderModal from './OrderModal'
 
 const MainTable = () => {
   // Sample orders data with new columns
-  const orders = [
-    { id: '#ORD-001', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 15, 2025', orderStatus: 'Completed', paymentStatus: 'Paid' },
-    { id: '#ORD-002', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 14, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid' },
-    { id: '#ORD-003', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 13, 2025', orderStatus: 'Completed', paymentStatus: 'Paid' },
-    { id: '#ORD-004', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 12, 2025', orderStatus: 'Cancelled', paymentStatus: 'Failed' },
-    { id: '#ORD-005', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 11, 2025', orderStatus: 'Completed', paymentStatus: 'Paid' },
-    { id: '#ORD-006', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 10, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid' },
-    { id: '#ORD-007', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 9, 2025', orderStatus: 'Completed', paymentStatus: 'Paid' },
-    { id: '#ORD-008', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 8, 2025', orderStatus: 'Processing', paymentStatus: 'Paid' },
-  ]
+  const [orders, setOrders] = useState([
+    { id: '#ORD-001', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 15, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'John Doe', customerPhone: '+91 98765 43210', customerInstagram: 'johndoe' },
+    { id: '#ORD-002', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 14, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid', customerName: 'Jane Smith', customerPhone: '+91 98765 43211', customerInstagram: 'janesmith' },
+    { id: '#ORD-003', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 13, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Bob Johnson', customerPhone: '+91 98765 43212', customerInstagram: 'bjohnson' },
+    { id: '#ORD-004', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 12, 2025', orderStatus: 'Cancelled', paymentStatus: 'Failed', customerName: 'Alice Brown', customerPhone: '+91 98765 43213', customerInstagram: 'aliceb' },
+    { id: '#ORD-005', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 11, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Charlie Wilson', customerPhone: '+91 98765 43214', customerInstagram: 'cwilson' },
+    { id: '#ORD-006', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 10, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid', customerName: 'Diana Miller', customerPhone: '+91 98765 43215', customerInstagram: 'dianam' },
+    { id: '#ORD-007', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 9, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Eve Davis', customerPhone: '+91 98765 43216', customerInstagram: 'eved' },
+    { id: '#ORD-008', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 8, 2025', orderStatus: 'Processing', paymentStatus: 'Paid', customerName: 'Frank Garcia', customerPhone: '+91 98765 43217', customerInstagram: 'frankg' },
+  ])
+  
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -84,11 +87,41 @@ const MainTable = () => {
   // Check if any filters are active
   const hasActiveFilters = searchTerm !== '' || orderStatusFilter !== 'All' || paymentStatusFilter !== 'All'
 
+  // Handle saving new order
+  const handleSaveOrder = (orderData) => {
+    // Transform order data to match table structure
+    const newOrder = {
+      id: orderData.id,
+      productId: orderData.products.length > 0 ? `PRD-${orderData.products[0].id}` : 'PRD-000',
+      productName: orderData.products.length > 0 ? orderData.products.map(p => p.name).join(', ') : 'No products',
+      price: orderData.totalPrice,
+      date: orderData.date,
+      orderStatus: orderData.orderStatus,
+      paymentStatus: orderData.paymentStatus,
+      customerName: orderData.customerName,
+      customerPhone: orderData.customerPhone,
+      customerInstagram: orderData.customerInstagram,
+    }
+    
+    setOrders((prev) => [newOrder, ...prev])
+  }
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 text-white bg-gradient-to-r from-white to-[#748298] bg-clip-text text-transparent">
-        Orders Management
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-white to-[#748298] bg-clip-text text-transparent">
+          Orders Management
+        </h1>
+        <button
+          onClick={() => setIsOrderModalOpen(true)}
+          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create Order
+        </button>
+      </div>
       <div className="mt-6">
         <div className="bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
           {/* Header */}
@@ -254,6 +287,13 @@ const MainTable = () => {
           </div>
         </div>
       </div>
+
+      {/* Order Modal */}
+      <OrderModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        onSave={handleSaveOrder}
+      />
     </div>
   )
 }
