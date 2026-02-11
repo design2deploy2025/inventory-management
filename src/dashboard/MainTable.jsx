@@ -1,20 +1,136 @@
 import React, { useState, useMemo } from 'react'
 import OrderModal from './OrderModal'
+import InvoiceModal from './InvoiceModal'
 
 const MainTable = () => {
-  // Sample orders data with new columns
+  // Sample orders data with products array for invoice support
   const [orders, setOrders] = useState([
-    { id: '#ORD-001', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 15, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'John Doe', customerPhone: '+91 98765 43210', customerInstagram: 'johndoe' },
-    { id: '#ORD-002', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 14, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid', customerName: 'Jane Smith', customerPhone: '+91 98765 43211', customerInstagram: 'janesmith' },
-    { id: '#ORD-003', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 13, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Bob Johnson', customerPhone: '+91 98765 43212', customerInstagram: 'bjohnson' },
-    { id: '#ORD-004', productId: 'PRD-001', productName: 'Premium Plan', price: 299.00, date: 'Jan 12, 2025', orderStatus: 'Cancelled', paymentStatus: 'Failed', customerName: 'Alice Brown', customerPhone: '+91 98765 43213', customerInstagram: 'aliceb' },
-    { id: '#ORD-005', productId: 'PRD-002', productName: 'Enterprise License', price: 1499.00, date: 'Jan 11, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Charlie Wilson', customerPhone: '+91 98765 43214', customerInstagram: 'cwilson' },
-    { id: '#ORD-006', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 10, 2025', orderStatus: 'Pending', paymentStatus: 'Unpaid', customerName: 'Diana Miller', customerPhone: '+91 98765 43215', customerInstagram: 'dianam' },
-    { id: '#ORD-007', productId: 'PRD-003', productName: 'Basic Plan', price: 99.00, date: 'Jan 9, 2025', orderStatus: 'Completed', paymentStatus: 'Paid', customerName: 'Eve Davis', customerPhone: '+91 98765 43216', customerInstagram: 'eved' },
-    { id: '#ORD-008', productId: 'PRD-004', productName: 'Professional Plan', price: 599.00, date: 'Jan 8, 2025', orderStatus: 'Processing', paymentStatus: 'Paid', customerName: 'Frank Garcia', customerPhone: '+91 98765 43217', customerInstagram: 'frankg' },
+    {
+      id: '#ORD-001',
+      products: [{ id: 1, name: 'Premium Plan', price: 299.00, quantity: 1 }],
+      totalPrice: 299.00,
+      date: 'Jan 15, 2025',
+      orderStatus: 'Completed',
+      paymentStatus: 'Paid',
+      customerName: 'John Doe',
+      customerPhone: '+91 98765 43210',
+      customerInstagram: 'johndoe',
+      paymentType: 'Card',
+      notes: 'Priority support requested',
+      invoiceDate: 'Jan 15, 2025',
+      dueDate: 'Jan 22, 2025'
+    },
+    {
+      id: '#ORD-002',
+      products: [{ id: 2, name: 'Enterprise License', price: 1499.00, quantity: 1 }],
+      totalPrice: 1499.00,
+      date: 'Jan 14, 2025',
+      orderStatus: 'Pending',
+      paymentStatus: 'Unpaid',
+      customerName: 'Jane Smith',
+      customerPhone: '+91 98765 43211',
+      customerInstagram: 'janesmith',
+      paymentType: 'Bank Transfer',
+      notes: '',
+      invoiceDate: 'Jan 14, 2025',
+      dueDate: 'Jan 21, 2025'
+    },
+    {
+      id: '#ORD-003',
+      products: [{ id: 3, name: 'Basic Plan', price: 99.00, quantity: 1 }],
+      totalPrice: 99.00,
+      date: 'Jan 13, 2025',
+      orderStatus: 'Completed',
+      paymentStatus: 'Paid',
+      customerName: 'Bob Johnson',
+      customerPhone: '+91 98765 43212',
+      customerInstagram: 'bjohnson',
+      paymentType: 'UPI',
+      notes: 'First-time customer',
+      invoiceDate: 'Jan 13, 2025',
+      dueDate: 'Jan 20, 2025'
+    },
+    {
+      id: '#ORD-004',
+      products: [{ id: 1, name: 'Premium Plan', price: 299.00, quantity: 1 }],
+      totalPrice: 299.00,
+      date: 'Jan 12, 2025',
+      orderStatus: 'Cancelled',
+      paymentStatus: 'Failed',
+      customerName: 'Alice Brown',
+      customerPhone: '+91 98765 43213',
+      customerInstagram: 'aliceb',
+      paymentType: 'Card',
+      notes: 'Customer requested cancellation',
+      invoiceDate: 'Jan 12, 2025',
+      dueDate: 'Jan 19, 2025'
+    },
+    {
+      id: '#ORD-005',
+      products: [{ id: 2, name: 'Enterprise License', price: 1499.00, quantity: 1 }],
+      totalPrice: 1499.00,
+      date: 'Jan 11, 2025',
+      orderStatus: 'Completed',
+      paymentStatus: 'Paid',
+      customerName: 'Charlie Wilson',
+      customerPhone: '+91 98765 43214',
+      customerInstagram: 'cwilson',
+      paymentType: 'Cash',
+      notes: 'Annual contract',
+      invoiceDate: 'Jan 11, 2025',
+      dueDate: 'Jan 18, 2025'
+    },
+    {
+      id: '#ORD-006',
+      products: [{ id: 4, name: 'Professional Plan', price: 599.00, quantity: 1 }],
+      totalPrice: 599.00,
+      date: 'Jan 10, 2025',
+      orderStatus: 'Pending',
+      paymentStatus: 'Unpaid',
+      customerName: 'Diana Miller',
+      customerPhone: '+91 98765 43215',
+      customerInstagram: 'dianam',
+      paymentType: 'Wallet',
+      notes: '',
+      invoiceDate: 'Jan 10, 2025',
+      dueDate: 'Jan 17, 2025'
+    },
+    {
+      id: '#ORD-007',
+      products: [{ id: 3, name: 'Basic Plan', price: 99.00, quantity: 1 }],
+      totalPrice: 99.00,
+      date: 'Jan 9, 2025',
+      orderStatus: 'Completed',
+      paymentStatus: 'Paid',
+      customerName: 'Eve Davis',
+      customerPhone: '+91 98765 43216',
+      customerInstagram: 'eved',
+      paymentType: 'COD',
+      notes: 'Quick delivery needed',
+      invoiceDate: 'Jan 9, 2025',
+      dueDate: 'Jan 16, 2025'
+    },
+    {
+      id: '#ORD-008',
+      products: [{ id: 4, name: 'Professional Plan', price: 599.00, quantity: 1 }],
+      totalPrice: 599.00,
+      date: 'Jan 8, 2025',
+      orderStatus: 'Processing',
+      paymentStatus: 'Paid',
+      customerName: 'Frank Garcia',
+      customerPhone: '+91 98765 43217',
+      customerInstagram: 'frankg',
+      paymentType: 'Card',
+      notes: 'Rush order',
+      invoiceDate: 'Jan 8, 2025',
+      dueDate: 'Jan 15, 2025'
+    },
   ])
   
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [orderToEdit, setOrderToEdit] = useState(null)
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -57,7 +173,7 @@ const MainTable = () => {
       // Search filter (Order ID or Product Name)
       const matchesSearch = 
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.productName.toLowerCase().includes(searchTerm.toLowerCase())
+        order.products.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
       
       // Order Status filter
       const matchesOrderStatus = orderStatusFilter === 'All' || order.orderStatus === orderStatusFilter
@@ -87,23 +203,46 @@ const MainTable = () => {
   // Check if any filters are active
   const hasActiveFilters = searchTerm !== '' || orderStatusFilter !== 'All' || paymentStatusFilter !== 'All'
 
+  // Handle viewing invoice
+  const handleViewInvoice = (order) => {
+    setSelectedOrder(order)
+    setIsInvoiceModalOpen(true)
+  }
+
+  // Handle editing order
+  const handleEditOrder = (order) => {
+    setOrderToEdit(order)
+    setIsOrderModalOpen(true)
+  }
+
   // Handle saving new order
   const handleSaveOrder = (orderData) => {
-    // Transform order data to match table structure
     const newOrder = {
       id: orderData.id,
-      productId: orderData.products.length > 0 ? `PRD-${orderData.products[0].id}` : 'PRD-000',
-      productName: orderData.products.length > 0 ? orderData.products.map(p => p.name).join(', ') : 'No products',
-      price: orderData.totalPrice,
+      products: orderData.products,
+      totalPrice: orderData.totalPrice,
       date: orderData.date,
       orderStatus: orderData.orderStatus,
       paymentStatus: orderData.paymentStatus,
       customerName: orderData.customerName,
       customerPhone: orderData.customerPhone,
       customerInstagram: orderData.customerInstagram,
+      paymentType: orderData.paymentType,
+      notes: orderData.notes,
+      invoiceDate: orderData.date,
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     }
     
     setOrders((prev) => [newOrder, ...prev])
+  }
+
+  // Handle updating existing order
+  const handleUpdateOrder = (updatedOrderData) => {
+    setOrders((prev) =>
+      prev.map(order =>
+        order.id === updatedOrderData.id ? { ...updatedOrderData, invoiceDate: order.invoiceDate, dueDate: order.dueDate } : order
+      )
+    )
   }
 
   return (
@@ -113,7 +252,10 @@ const MainTable = () => {
           Orders Management
         </h1>
         <button
-          onClick={() => setIsOrderModalOpen(true)}
+          onClick={() => {
+            setOrderToEdit(null)
+            setIsOrderModalOpen(true)
+          }}
           className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,13 +346,10 @@ const MainTable = () => {
                     Order ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Product ID
+                    Product Names
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Product Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Price
+                    Cost
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Date
@@ -220,6 +359,12 @@ const MainTable = () => {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Payment Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Invoice
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Edit Order
                   </th>
                 </tr>
               </thead>
@@ -231,13 +376,10 @@ const MainTable = () => {
                         {order.id}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {order.productId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {order.productName}
+                        {order.products.map(p => p.name).join(', ')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
-                        {formatPrice(order.price)}
+                        {formatPrice(order.totalPrice)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {order.date}
@@ -252,11 +394,27 @@ const MainTable = () => {
                           {order.paymentStatus}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleViewInvoice(order)}
+                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                        >
+                          View
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleEditOrder(order)}
+                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center">
                         <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -291,12 +449,26 @@ const MainTable = () => {
       {/* Order Modal */}
       <OrderModal
         isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
+        onClose={() => {
+          setIsOrderModalOpen(false)
+          setOrderToEdit(null)
+        }}
         onSave={handleSaveOrder}
+        onUpdate={handleUpdateOrder}
+        orderToEdit={orderToEdit}
+      />
+
+      {/* Invoice Modal */}
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => {
+          setIsInvoiceModalOpen(false)
+          setSelectedOrder(null)
+        }}
+        order={selectedOrder}
       />
     </div>
   )
 }
 
 export default MainTable
-

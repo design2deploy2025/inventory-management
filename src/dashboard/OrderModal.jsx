@@ -12,7 +12,7 @@ const sampleProducts = [
   { id: 8, name: 'Focus Carry Pouch', price: 32, category: 'Accessories' },
 ]
 
-const OrderModal = ({ isOpen, onClose, onSave }) => {
+const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
   const [formData, setFormData] = useState({
     orderId: '',
     customerName: '',
@@ -27,17 +27,43 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
 
   const [nextOrderNumber, setNextOrderNumber] = useState(1)
 
-  // Generate order ID
+  // Determine if we're in edit mode
+  const isEditMode = !!orderToEdit
+
+  // Initialize form data when modal opens
   useEffect(() => {
     if (isOpen) {
-      const orderNumber = Math.floor(Math.random() * 900) + 100
-      setNextOrderNumber(orderNumber)
-      setFormData(prev => ({
-        ...prev,
-        orderId: `#ORD-${orderNumber}`
-      }))
+      if (isEditMode && orderToEdit) {
+        // Edit mode: pre-fill with existing order data
+        setFormData({
+          orderId: orderToEdit.id,
+          customerName: orderToEdit.customerName || '',
+          customerPhone: orderToEdit.customerPhone || '',
+          customerInstagram: orderToEdit.customerInstagram || '',
+          paymentType: orderToEdit.paymentType || 'Cash',
+          paymentStatus: orderToEdit.paymentStatus || 'Unpaid',
+          orderStatus: orderToEdit.orderStatus || 'Pending',
+          selectedProducts: orderToEdit.products || [],
+          notes: orderToEdit.notes || '',
+        })
+      } else {
+        // Create mode: generate new order ID
+        const orderNumber = Math.floor(Math.random() * 900) + 100
+        setNextOrderNumber(orderNumber)
+        setFormData({
+          orderId: `#ORD-${orderNumber}`,
+          customerName: '',
+          customerPhone: '',
+          customerInstagram: '',
+          paymentType: 'Cash',
+          paymentStatus: 'Unpaid',
+          orderStatus: 'Pending',
+          selectedProducts: [],
+          notes: '',
+        })
+      }
     }
-  }, [isOpen])
+  }, [isOpen, isEditMode, orderToEdit])
 
   // Handle input changes
   const handleChange = (e) => {
@@ -103,7 +129,7 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
     }, 0)
   }
 
-  // Handle save
+  // Handle save/create
   const handleSave = () => {
     const orderData = {
       id: formData.orderId,
@@ -116,12 +142,20 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
       products: formData.selectedProducts,
       totalPrice: calculateTotal(),
       notes: formData.notes,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      createdAt: new Date().toISOString(),
+      date: isEditMode 
+        ? (orderToEdit?.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+        : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      createdAt: isEditMode ? orderToEdit?.createdAt : new Date().toISOString(),
     }
     
-    if (onSave) {
-      onSave(orderData)
+    if (isEditMode) {
+      if (onUpdate) {
+        onUpdate(orderData)
+      }
+    } else {
+      if (onSave) {
+        onSave(orderData)
+      }
     }
     onClose()
     
@@ -157,10 +191,10 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
             <div>
               <h2 className="text-xl font-semibold text-white">
-                Create New Order
+                {isEditMode ? 'Edit Order' : 'Create New Order'}
               </h2>
               <p className="text-sm text-slate-400 mt-1">
-                Fill in the order details below
+                {isEditMode ? 'Update order details below' : 'Fill in the order details below'}
               </p>
             </div>
             <button
@@ -188,22 +222,24 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
                   </h3>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Order ID (Auto-generated) */}
+                    {/* Order ID (Auto-generated in create mode) */}
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
-                        Order ID
+                        Order ID {isEditMode && <span className="text-xs text-slate-500">(Fixed in edit mode)</span>}
                       </label>
                       <div className="relative">
                         <input
                           type="text"
                           name="orderId"
                           value={formData.orderId}
-                          readOnly
-                          className="block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors cursor-not-allowed opacity-75"
+                          readOnly={isEditMode}
+                          className={`block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${isEditMode ? 'cursor-not-allowed opacity-75' : ''}`}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                          Auto-generated
-                        </span>
+                        {!isEditMode && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                            Auto-generated
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -520,7 +556,7 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
               disabled={!formData.customerName || formData.selectedProducts.length === 0}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
             >
-              Create Order
+              {isEditMode ? 'Update Order' : 'Create Order'}
             </button>
           </div>
         </div>
@@ -530,4 +566,3 @@ const OrderModal = ({ isOpen, onClose, onSave }) => {
 }
 
 export default OrderModal
-
