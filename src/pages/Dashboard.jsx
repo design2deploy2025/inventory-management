@@ -10,6 +10,7 @@ import Checklists from '../dashboard/pages/Checklists'
 import Themes from '../dashboard/pages/Themes'
 import Settings from '../dashboard/pages/Settings'
 import MainTable from '../dashboard/MainTable'
+import CustomersTable from '../dashboard/CustomersTable'
 import ProductDetails from '../dashboard/ProductDetails'
 import StatCards from '../dashboard/StatCards'
 import Analytics from '../dashboard/pages/Analytics'
@@ -29,7 +30,7 @@ const Dashboard = () => {
       case 'analytics':
         return <Analytics   />
       case 'customers':
-        return <MainTable   />
+        return <CustomersTable />
       case 'performance':
         return <Performance />
       case 'guides':
