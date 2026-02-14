@@ -1,5 +1,36 @@
 import React from 'react'
 
+// Sample data for demonstration (will be replaced with actual data)
+const sampleProducts = [
+  { id: 1, name: 'Earthen Bottle', price: 48, quantity: 150, totalSold: 1250 },
+  { id: 2, name: 'Nomad Tumbler', price: 35, quantity: 200, totalSold: 890 },
+  { id: 3, name: 'Focus Paper Refill', price: 89, quantity: 75, totalSold: 2100 },
+  { id: 4, name: 'Machined Mechanical Pencil', price: 35, quantity: 120, totalSold: 675 },
+  { id: 5, name: 'Focus Card Tray', price: 64, quantity: 45, totalSold: 320 },
+  { id: 6, name: 'Focus Multi-Pack', price: 39, quantity: 90, totalSold: 1540 },
+  { id: 7, name: 'Brass Scissors', price: 50, quantity: 60, totalSold: 185 },
+  { id: 8, name: 'Focus Carry Pouch', price: 32, quantity: 110, totalSold: 420 },
+]
+
+const sampleOrders = [
+  { id: '#ORD-001', totalPrice: 299.00, orderStatus: 'Completed' },
+  { id: '#ORD-002', totalPrice: 1499.00, orderStatus: 'Pending' },
+  { id: '#ORD-003', totalPrice: 99.00, orderStatus: 'Completed' },
+  { id: '#ORD-004', totalPrice: 299.00, orderStatus: 'Cancelled' },
+  { id: '#ORD-005', totalPrice: 1499.00, orderStatus: 'Completed' },
+  { id: '#ORD-006', totalPrice: 599.00, orderStatus: 'Pending' },
+  { id: '#ORD-007', totalPrice: 99.00, orderStatus: 'Completed' },
+  { id: '#ORD-008', totalPrice: 599.00, orderStatus: 'Processing' },
+]
+
+// Calculate metrics
+const totalProductsSold = sampleProducts.reduce((sum, p) => sum + (p.totalSold || 0), 0)
+const totalRevenue = sampleOrders
+  .filter(o => o.orderStatus === 'Completed')
+  .reduce((sum, o) => sum + o.totalPrice, 0)
+const totalStock = sampleProducts.reduce((sum, p) => sum + (p.quantity || 0), 0)
+const totalStockValue = sampleProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0)
+
 const StatCards = () => {
   return (
     <div>
@@ -7,25 +38,25 @@ const StatCards = () => {
   <div class="grid md:grid-cols-4 bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
     <a class="block p-4 md:p-5 relative bg-[#0A0A0A] hover:bg-gray-900 focus:outline-hidden focus:bg-gray-900 before:absolute before:top-0 before:start-0 before:w-full before:h-px md:before:h-full before:border-s before:border-gray-800 first:before:bg-transparent transition-colors duration-300" href="#">
       <div class="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
-        <svg class="shrink-0 size-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <svg class="shrink-0 size-5 text-emerald-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
 
         <div class="grow">
           <p class="text-xs uppercase font-medium text-slate-400">
-            Total users
+            Total Lifetime Products Sold
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            72,540
+            {totalProductsSold.toLocaleString()}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
-              from <span class="font-semibold text-white">70,104</span>
+              All time sales
             </p>
-            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400">
+            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400">
               <svg class="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
               </svg>
               <span class="inline-block">
-                12.5%
+                Lifetime
               </span>
             </span>
           </div>
@@ -35,25 +66,25 @@ const StatCards = () => {
 
     <a class="block p-4 md:p-5 relative bg-[#0A0A0A] hover:bg-gray-900 focus:outline-hidden focus:bg-gray-900 before:absolute before:top-0 before:start-0 before:w-full before:h-px md:before:h-full before:border-s before:border-gray-800 first:before:bg-transparent transition-colors duration-300" href="#">
       <div class="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
-        <svg class="shrink-0 size-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        <svg class="shrink-0 size-5 text-green-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
 
         <div class="grow">
           <p class="text-xs uppercase font-medium text-slate-400">
-            Sessions
+            Total Lifetime Revenue
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            29.4%
+            ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
-              from <span class="font-semibold text-white">29.1%</span>
+              Completed orders
             </p>
-            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400">
+            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-green-500/10 text-green-400">
               <svg class="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
               </svg>
               <span class="inline-block">
-                1.7%
+                All Time
               </span>
             </span>
           </div>
@@ -63,25 +94,25 @@ const StatCards = () => {
 
     <a class="block p-4 md:p-5 relative bg-[#0A0A0A] hover:bg-gray-900 focus:outline-hidden focus:bg-gray-900 before:absolute before:top-0 before:start-0 before:w-full before:h-px md:before:h-full before:border-s before:border-gray-800 first:before:bg-transparent transition-colors duration-300" href="#">
       <div class="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
-        <svg class="shrink-0 size-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/><path d="m12 12 4 10 1.7-4.3L22 16Z"/></svg>
+        <svg class="shrink-0 size-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
 
         <div class="grow">
           <p class="text-xs uppercase font-medium text-slate-400">
-            Avg. Click Rate
+            Total Stock in Inventory
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            56.8%
+            {totalStock.toLocaleString()}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
-              from <span class="font-semibold text-white">61.2%</span>
+              Units available
             </p>
-            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400">
+            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400">
               <svg class="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+                <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
               </svg>
               <span class="inline-block">
-                4.4%
+                In Stock
               </span>
             </span>
           </div>
@@ -91,25 +122,25 @@ const StatCards = () => {
 
     <a class="block p-4 md:p-5 relative bg-[#0A0A0A] hover:bg-gray-900 focus:outline-hidden focus:bg-gray-900 before:absolute before:top-0 before:start-0 before:w-full before:h-px md:before:h-full before:border-s before:border-gray-800 first:before:bg-transparent transition-colors duration-300" href="#">
       <div class="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
-        <svg class="shrink-0 size-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12s2.545-5 7-5c4.454 0 7 5 7 5s-2.546 5-7 5c-4.455 0-7-5-7-5z"/><path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M21 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2"/><path d="M21 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"/></svg>
+        <svg class="shrink-0 size-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
 
         <div class="grow">
           <p class="text-xs uppercase font-medium text-slate-400">
-            Pageviews
+            Total Cost of Stock
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            92,913
+            ${totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
-              from <span class="font-semibold text-white">94,012</span>
+              Inventory value
             </p>
-            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400">
+            <span class="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400">
               <svg class="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+                <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
               </svg>
               <span class="inline-block">
-                0.1%
+                At Cost
               </span>
             </span>
           </div>

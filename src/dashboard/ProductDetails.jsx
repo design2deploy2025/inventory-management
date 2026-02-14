@@ -15,6 +15,7 @@ const initialProducts = [
     quantity: 150,
     sku: 'EBT-001',
     status: 'Active',
+    totalSold: 1250,
   },
   {
     id: 2,
@@ -28,6 +29,7 @@ const initialProducts = [
     quantity: 200,
     sku: 'NMD-002',
     status: 'Active',
+    totalSold: 890,
   },
   {
     id: 3,
@@ -41,6 +43,7 @@ const initialProducts = [
     quantity: 75,
     sku: 'FPR-003',
     status: 'Active',
+    totalSold: 2100,
   },
   {
     id: 4,
@@ -54,6 +57,7 @@ const initialProducts = [
     quantity: 120,
     sku: 'MMP-004',
     status: 'Active',
+    totalSold: 675,
   },
   {
     id: 5,
@@ -67,6 +71,7 @@ const initialProducts = [
     quantity: 45,
     sku: 'FCT-005',
     status: 'Active',
+    totalSold: 320,
   },
   {
     id: 6,
@@ -80,6 +85,7 @@ const initialProducts = [
     quantity: 90,
     sku: 'FMP-006',
     status: 'Active',
+    totalSold: 1540,
   },
   {
     id: 7,
@@ -93,6 +99,7 @@ const initialProducts = [
     quantity: 60,
     sku: 'BSC-007',
     status: 'Active',
+    totalSold: 185,
   },
   {
     id: 8,
@@ -106,6 +113,7 @@ const initialProducts = [
     quantity: 110,
     sku: 'FCP-008',
     status: 'Active',
+    totalSold: 420,
   },
 ]
 

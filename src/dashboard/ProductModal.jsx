@@ -12,7 +12,11 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
     status: 'Active',
     imageSrc: '',
     imageAlt: '',
+    totalSold: 0,
   })
+  
+  const [uploadedFile, setUploadedFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
 
   // Categories for dropdown
   const categories = [
@@ -43,7 +47,12 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
         status: product.status || 'Active',
         imageSrc: product.imageSrc || '',
         imageAlt: product.imageAlt || '',
+        totalSold: product.totalSold || 0,
       })
+      // Set image preview from product data
+      if (product.imageSrc) {
+        setImagePreview(product.imageSrc)
+      }
     }
   }, [product])
 
@@ -54,6 +63,22 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
       ...prev,
       [name]: value,
     }))
+  }
+
+  // Handle file upload
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setUploadedFile(file)
+      // Create local preview URL
+      const previewUrl = URL.createObjectURL(file)
+      setImagePreview(previewUrl)
+      setFormData((prev) => ({
+        ...prev,
+        imageSrc: previewUrl,
+        imageAlt: file.name,
+      }))
+    }
   }
 
   // Handle save
@@ -110,24 +135,39 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
                   </label>
                   <div className="relative aspect-square bg-gray-900 rounded-xl overflow-hidden border border-gray-800">
                     <img
-                      src={formData.imageSrc || 'https://via.placeholder.com/400'}
+                      src={imagePreview || 'https://via.placeholder.com/400'}
                       alt={formData.imageAlt || 'Product image'}
                       className="w-full h-full object-cover"
                     />
-                    {formData.imageSrc && (
+                    {imagePreview && (
                       <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
                         <span className="text-white text-sm">Click to preview</span>
                       </div>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    name="imageSrc"
-                    value={formData.imageSrc}
-                    onChange={handleChange}
-                    placeholder="Image URL"
-                    className="mt-3 block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                  />
+                  <div className="mt-3">
+                    <label
+                      htmlFor="image-upload"
+                      className="flex items-center justify-center px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white cursor-pointer hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Upload Image
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    {uploadedFile && (
+                      <p className="mt-2 text-xs text-emerald-400">
+                        Selected: {uploadedFile.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Product Name */}
@@ -286,6 +326,19 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
                           ? `$${(parseFloat(formData.price.replace('$', '')) * parseInt(formData.quantity)).toFixed(2)}`
                           : '$0.00'}
                       </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Items Sold - Read Only */}
+                <div className="bg-indigo-900/20 rounded-xl p-4 border border-indigo-500/30">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-indigo-300">Total Items Sold</h4>
+                      <p className="text-xs text-slate-400 mt-1">Read-only - fetched from database</p>
+                    </div>
+                    <div className="text-2xl font-bold text-indigo-400">
+                      {formData.totalSold?.toLocaleString() || 0}
                     </div>
                   </div>
                 </div>
