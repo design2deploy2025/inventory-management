@@ -69,6 +69,7 @@ CREATE TABLE profiles (
     email TEXT NOT NULL,
     business_name TEXT,
     owner_name TEXT,
+    whatsapp_number TEXT,
     instagram_handle TEXT,
     description TEXT,
     logo_url TEXT,

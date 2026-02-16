@@ -1,34 +1,27 @@
-# Task: Make Analytics Tab Dynamic (Connect to Supabase)
+# TODO: Make Profile Tab Dynamic
 
-## Steps to Complete:
+## Plan
+1. [x] Analyze codebase and database schema
+2. [x] Update Settings.jsx with Supabase integration
+   - [x] Add state management for form fields
+   - [x] Add fetch profile data on mount
+   - [x] Add save/update profile functionality
+   - [x] Add logo upload to Supabase Storage
+   - [x] Add real-time subscription
+   - [x] Add loading and error states
+3. [x] Add whatsapp_number column to database schema
 
-### Step 1: Update TimePeriodStats.jsx
-- [x] Import supabase and useAuth
-- [x] Add state for stats data (day/week/month/year)
-- [x] Add fetchStats function to query Supabase
-- [x] Calculate orders received for each time period
-- [x] Calculate revenue (from paid orders) for each time period
-- [x] Calculate stock and stock value from products
-- [x] Add loading state and real-time subscription
-- [x] Update UI to use dynamic data
+## Notes
+- Connected to `profiles` table in Supabase
+- Used `user.id` from AuthContext for user identification
+- Upload logos to `business-logos` storage bucket
+- Added whatsapp_number field to database schema
 
-### Step 2: Update TopSellingProducts.jsx
-- [x] Import supabase and useAuth
-- [x] Add state for products data (weekly/monthly/fast)
-- [x] Add fetchProducts function to query Supabase
-- [x] Fetch products ordered by total_sold DESC
-- [x] Calculate growth based on comparison
-- [x] Add loading state and real-time subscription
-- [x] Update chart and table to use dynamic data
+## Database Migration Required
+Run this SQL in Supabase to add the whatsapp_number column:
+```sql
+ALTER TABLE profiles ADD COLUMN whatsapp_number TEXT;
+```
 
-### Step 3: Update Analytics.jsx
-- [x] Uncomment/Enable StatCards component
-- [x] Ensure all child components receive proper props
-- [x] Update PDF generation to use dynamic data
-
-### Step 4: Test Implementation
-- [x] Run development server
-- [x] Verify analytics data loads from Supabase
-- [x] Verify time period switching works
-- [x] Verify real-time updates work
+The schema file has been updated with the new column.
 

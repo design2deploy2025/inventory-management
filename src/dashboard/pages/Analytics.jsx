@@ -5,8 +5,8 @@ import TopSellingProducts from '../TopSellingProducts'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { FaDownload } from 'react-icons/fa'
-import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 const Analytics = () => {
   const { user } = useAuth()
