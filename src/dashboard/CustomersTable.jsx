@@ -1,106 +1,15 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import CustomerModal from './CustomerModal'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const CustomersTable = () => {
-  // Sample customers data - WhatsApp/Instagram sellers customers
-  const [customers, setCustomers] = useState([
-    {
-      id: 'CUST-001',
-      name: 'Priya Sharma',
-      phone: '+91 98765 43210',
-      whatsapp: '+91 98765 43210',
-      insta: 'priya_sharma',
-      lastOrderDate: 'Jan 15, 2025',
-      lifetimeValue: 4500.00,
-      repeatOrders: 5,
-      lastOrderDetails: 'Gift Box - Anniversary - ₹1250',
-      source: 'WhatsApp',
-    },
-    {
-      id: 'CUST-002',
-      name: 'Amit Kumar',
-      phone: '+91 98765 43211',
-      whatsapp: '+91 98765 43211',
-      insta: 'amit_creations',
-      lastOrderDate: 'Jan 14, 2025',
-      lifetimeValue: 2800.00,
-      repeatOrders: 2,
-      lastOrderDetails: 'Handmade Candle Set - ₹2800',
-      source: 'Instagram',
-    },
-    {
-      id: 'CUST-003',
-      name: 'Riya Patel',
-      phone: '+91 98765 43212',
-      whatsapp: '+91 98765 43212',
-      insta: 'riya_gifts',
-      lastOrderDate: 'Jan 13, 2025',
-      lifetimeValue: 650.00,
-      repeatOrders: 1,
-      lastOrderDetails: 'Customized Rakhi Set - ₹650',
-      source: 'WhatsApp',
-    },
-    {
-      id: 'CUST-004',
-      name: 'Sneha Reddy',
-      phone: '+91 98765 43213',
-      whatsapp: '+91 98765 43213',
-      insta: 'sneha_handmade',
-      lastOrderDate: 'Jan 12, 2025',
-      lifetimeValue: 1800.00,
-      repeatOrders: 3,
-      lastOrderDetails: 'Festival Gift Hamper - ₹1800',
-      source: 'Instagram',
-    },
-    {
-      id: 'CUST-005',
-      name: 'Vikram Singh',
-      phone: '+91 98765 43214',
-      whatsapp: '+91 98765 43214',
-      insta: 'vikram_home',
-      lastOrderDate: 'Jan 11, 2025',
-      lifetimeValue: 8900.00,
-      repeatOrders: 8,
-      lastOrderDetails: '3x Handloom Items - ₹8900',
-      source: 'WhatsApp',
-    },
-    {
-      id: 'CUST-006',
-      name: 'Anjali Mehta',
-      phone: '+91 98765 43215',
-      whatsapp: '+91 98765 43215',
-      insta: 'anjali_designs',
-      lastOrderDate: 'Jan 10, 2025',
-      lifetimeValue: 0.00,
-      repeatOrders: 0,
-      lastOrderDetails: 'No orders yet',
-      source: 'Instagram',
-    },
-    {
-      id: 'CUST-007',
-      name: 'Kavita Joshi',
-      phone: '+91 98765 43216',
-      whatsapp: '+91 98765 43216',
-      insta: 'kavita_art',
-      lastOrderDate: 'Jan 9, 2025',
-      lifetimeValue: 2250.00,
-      repeatOrders: 4,
-      lastOrderDetails: 'Terracotta Decor Set - ₹2250',
-      source: 'WhatsApp',
-    },
-    {
-      id: 'CUST-008',
-      name: 'Rohit Verma',
-      phone: '+91 98765 43217',
-      whatsapp: '+91 98765 43217',
-      insta: 'rohit_frames',
-      lastOrderDate: 'Jan 8, 2025',
-      lifetimeValue: 4200.00,
-      repeatOrders: 2,
-      lastOrderDetails: '2x Photo Frames - ₹4200',
-      source: 'WhatsApp',
-    },
-  ])
+  const { user } = useAuth()
+  
+  // State for customers from Supabase
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
   const [customerToEdit, setCustomerToEdit] = useState(null)
@@ -109,6 +18,84 @@ const CustomersTable = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [sourceFilter, setSourceFilter] = useState('All')
+
+  // Fetch customers from Supabase
+  const fetchCustomers = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error: fetchError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      // Transform data to match component's expected format
+      const transformedCustomers = data?.map(customer => ({
+        id: customer.id,
+        customerId: customer.id, // Keep the UUID for editing
+        name: customer.name || '',
+        phone: customer.phone || '',
+        whatsapp: customer.phone || '',
+        insta: customer.insta || '',
+        email: customer.email || '',
+        address: customer.address || '',
+        notes: customer.notes || '',
+        lastOrderDate: customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No orders yet',
+        lifetimeValue: customer.lifetime_value || 0,
+        repeatOrders: customer.repeat_orders || 0,
+        lastOrderDetails: customer.last_order_details || 'No orders yet',
+        source: customer.instagram ? 'Instagram' : 'WhatsApp',
+        created_at: customer.created_at,
+        updated_at: customer.updated_at
+      })) || []
+
+      setCustomers(transformedCustomers)
+    } catch (err) {
+      console.error('Error fetching customers:', err.message)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch customers when user changes
+  useEffect(() => {
+    if (user) {
+      fetchCustomers()
+    }
+  }, [user])
+
+  // Set up real-time subscription for customers
+  useEffect(() => {
+    if (!user) return
+
+    const customersChannel = supabase
+      .channel('customers-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'customers',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Customer change detected:', payload)
+          fetchCustomers() // Refresh customers on any change
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(customersChannel)
+    }
+  }, [user])
 
   // Format price to currency
   const formatPrice = (price) => {
@@ -140,38 +127,126 @@ const CustomersTable = () => {
     setIsCustomerModalOpen(true)
   }
 
-  // Handle saving new customer
-  const handleSaveCustomer = (customerData) => {
-    const newCustomer = {
-      id: customerData.id,
-      name: customerData.name,
-      phone: customerData.phone,
-      whatsapp: customerData.whatsapp,
-      insta: customerData.insta,
-      lastOrderDate: 'No orders yet',
-      lifetimeValue: 0,
-      repeatOrders: 0,
-      lastOrderDetails: 'No orders yet',
-      source: customerData.source || 'WhatsApp',
+  // Handle saving new customer to Supabase
+  const handleSaveCustomer = async (customerData) => {
+    if (!user) return
+
+    try {
+      // Prepare customer data for Supabase (only use columns that exist in the schema)
+      const supabaseCustomerData = {
+        user_id: user.id,
+        name: customerData.name,
+        phone: customerData.phone || null,
+        insta: customerData.insta || null,
+        email: customerData.email || null,
+        address: customerData.address || null,
+        notes: customerData.notes || null,
+      }
+
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([supabaseCustomerData])
+        .select()
+
+      if (error) throw error
+
+      // The real-time subscription will automatically update the list
+      // But we can also optimistically add to local state
+      if (data && data[0]) {
+        const newCustomer = {
+          id: data[0].id,
+          customerId: data[0].id,
+          name: data[0].name || '',
+          phone: data[0].phone || '',
+          whatsapp: data[0].phone || '',
+          insta: data[0].insta || '',
+          email: data[0].email || '',
+          address: data[0].address || '',
+          notes: data[0].notes || '',
+          lastOrderDate: 'No orders yet',
+          lifetimeValue: 0,
+          repeatOrders: 0,
+          lastOrderDetails: 'No orders yet',
+          source: data[0].instagram ? 'Instagram' : 'WhatsApp',
+          created_at: data[0].created_at,
+          updated_at: data[0].updated_at
+        }
+        setCustomers((prev) => [newCustomer, ...prev])
+      }
+    } catch (err) {
+      console.error('Error creating customer:', err.message)
+      alert('Failed to create customer: ' + err.message)
     }
-    
-    setCustomers((prev) => [newCustomer, ...prev])
   }
 
-  // Handle updating existing customer
-  const handleUpdateCustomer = (updatedCustomerData) => {
-    setCustomers((prev) =>
-      prev.map(customer =>
-        customer.id === updatedCustomerData.id ? { ...updatedCustomerData } : customer
+  // Handle updating existing customer in Supabase
+  const handleUpdateCustomer = async (updatedCustomerData) => {
+    if (!user || !updatedCustomerData.customerId) return
+
+    try {
+      const supabaseCustomerData = {
+        name: updatedCustomerData.name,
+        phone: updatedCustomerData.phone,
+        whatsapp: updatedCustomerData.phone,
+        insta: updatedCustomerData.insta,
+        email: updatedCustomerData.email || '',
+        address: updatedCustomerData.address || '',
+        notes: updatedCustomerData.notes || '',
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('customers')
+        .update(supabaseCustomerData)
+        .eq('id', updatedCustomerData.customerId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      // The real-time subscription will automatically update the list
+      // But we can also optimistically update local state
+      setCustomers((prev) =>
+        prev.map(customer =>
+          customer.id === updatedCustomerData.id 
+            ? { 
+                ...customer,
+                ...updatedCustomerData,
+              } 
+            : customer
+        )
       )
-    )
+    } catch (err) {
+      console.error('Error updating customer:', err.message)
+      alert('Failed to update customer: ' + err.message)
+    }
   }
 
   // Handle deleting customer
-  const handleDeleteCustomer = (customerId) => {
-    setCustomers((prev) =>
-      prev.filter(customer => customer.id !== customerId)
-    )
+  const handleDeleteCustomer = async (customerId) => {
+    if (!user) return
+    
+    // Confirm before deleting
+    if (!window.confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      // Optimistically remove from local state
+      setCustomers((prev) =>
+        prev.filter(customer => customer.id !== customerId)
+      )
+    } catch (err) {
+      console.error('Error deleting customer:', err.message)
+      alert('Failed to delete customer: ' + err.message)
+    }
   }
 
   // Filter and sort customers based on current filters
@@ -183,9 +258,9 @@ const CustomersTable = () => {
       result = result.filter(customer =>
         customer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.phone.includes(searchTerm) ||
-        customer.whatsapp.includes(searchTerm) ||
-        customer.insta.toLowerCase().includes(searchTerm.toLowerCase())
+        (customer.phone && customer.phone.includes(searchTerm)) ||
+        (customer.whatsapp && customer.whatsapp.includes(searchTerm)) ||
+        (customer.insta && customer.insta.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
 
@@ -204,7 +279,7 @@ const CustomersTable = () => {
         case 'repeatOrders':
           return b.repeatOrders - a.repeatOrders
         case 'recent':
-          return new Date(b.lastOrderDate) - new Date(a.lastOrderDate)
+          return new Date(b.lastOrderDate || 0) - new Date(a.lastOrderDate || 0)
         default:
           return 0
       }
@@ -327,109 +402,134 @@ const CustomersTable = () => {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#0A0A0A]">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Customer ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    WhatsApp
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Instagram
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Source
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Last Order Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Lifetime Value
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Repeat Orders
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Last Order Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-900/50 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {customer.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {customer.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        <span className="text-green-400">+91 {customer.whatsapp.slice(-10)}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        <span className="text-pink-400">@{customer.insta}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(customer.source)}`}>
-                          {customer.source}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                        {customer.lastOrderDate}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
-                        {formatPrice(customer.lifetimeValue)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getRepeatOrderBadge(customer.repeatOrders)}`}>
-                          {customer.repeatOrders} orders
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 max-w-[200px] truncate">
-                        {customer.lastOrderDetails}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEditCustomer(customer)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCustomer(customer.id)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
-                          >
-                            Delete
-                          </button>
+            {loading ? (
+              <div className="px-6 py-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                <p className="mt-4 text-slate-400">Loading customers...</p>
+              </div>
+            ) : error ? (
+              <div className="px-6 py-12 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4">
+                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-lg text-red-400">Error loading customers</p>
+                <p className="text-sm text-slate-400 mt-1">{error}</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-[#0A0A0A]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Customer ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      WhatsApp
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Instagram
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Source
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Last Order Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Lifetime Value
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Repeat Orders
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Last Order Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map((customer) => (
+                      <tr key={customer.id} className="hover:bg-gray-900/50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                          {customer.id.slice(0, 8).toUpperCase()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                          {customer.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                          {customer.whatsapp ? (
+                            <span className="text-green-400">+91 {customer.whatsapp.slice(-10)}</span>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                          {customer.insta ? (
+                            <span className="text-pink-400">@{customer.insta}</span>
+                          ) : (
+                            <span className="text-slate-500">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(customer.source)}`}>
+                            {customer.source}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                          {customer.lastOrderDate}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
+                          {formatPrice(customer.lifetimeValue)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getRepeatOrderBadge(customer.repeatOrders)}`}>
+                            {customer.repeatOrders} orders
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 max-w-[200px] truncate">
+                          {customer.lastOrderDetails}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditCustomer(customer)}
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCustomer(customer.id)}
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center">
+                          <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <p className="text-lg">No customers found</p>
+                          <p className="text-sm mt-1">Try adjusting your search or add a new customer</p>
                         </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
-                      <div className="flex flex-col items-center justify-center">
-                        <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <p className="text-lg">No customers found</p>
-                        <p className="text-sm mt-1">Try adjusting your search</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Footer */}
