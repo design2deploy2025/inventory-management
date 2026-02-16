@@ -4,6 +4,7 @@ import StockSummary from '../StockSummary'
 import GraphBlock from '../GraphBlock'
 import VisitorsAreaCard from '../VisitorsAreaCard'
 import MainTable from '../MainTable'
+import PendingOrdersTable from '../PendingOrdersTable'
 
 const DashboardHome = () => {
   return (
@@ -17,7 +18,8 @@ const DashboardHome = () => {
       <VisitorsAreaCard/>
       <VisitorsAreaCard/>
       </div> */}
-      <MainTable/>
+      {/* <MainTable/> */}
+      <PendingOrdersTable/>
       
      
     </div>

@@ -16,6 +16,8 @@
     "@tailwindcss/vite": "^4.1.18",
     "apexcharts": "^5.3.6",
     "emailjs": "^5.0.0",
+    "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
     "lodash": "^4.17.23",
     "react": "^19.2.0",
     "react-apexcharts": "^1.9.0",

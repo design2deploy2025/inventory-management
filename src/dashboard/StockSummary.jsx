@@ -48,13 +48,15 @@ const StockSummary = () => {
           </div>
           
           <div className="space-y-3">
-            {lowOnStockProducts.map((product) => (
+            {lowOnStockProducts.map((product, index) => (
               <div 
                 key={product.id} 
                 className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                  <span className="flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full bg-red-500/20 text-red-400">
+                    {index + 1}
+                  </span>
                   <span className="text-sm text-white font-medium">{product.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
