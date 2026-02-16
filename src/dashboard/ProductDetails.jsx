@@ -1,126 +1,96 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ProductModal from './ProductModal'
-
-// Enhanced product data with additional fields - Gift items & Handicrafts
-const initialProducts = [
-  {
-    id: 1,
-    name: 'Gift Box - Anniversary Special',
-    href: '#',
-    price: '₹850',
-    imageSrc: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&h=400&fit=crop',
-    imageAlt: 'Beautiful anniversary gift box with flowers and chocolates.',
-    description: 'Luxurious anniversary gift box including scented candles, premium chocolates, and a handwritten card. Perfect for celebrating special moments.',
-    category: 'Gift Boxes',
-    quantity: 25,
-    sku: 'GB-ANN-001',
-    status: 'Active',
-    totalSold: 156,
-  },
-  {
-    id: 2,
-    name: 'Handmade Scented Candle Set',
-    href: '#',
-    price: '₹450',
-    imageSrc: 'https://images.unsplash.com/photo-1602607434640-bce8c9e5b88c?w=400&h=400&fit=crop',
-    imageAlt: 'Set of 3 handcrafted scented candles in ceramic holders.',
-    description: 'Hand-poured scented candles made with natural soy wax. Set of 3 in vanilla, lavender, and rose fragrances. Long-lasting burn time.',
-    category: 'Handmade Candles',
-    quantity: 40,
-    sku: 'HSC-002',
-    status: 'Active',
-    totalSold: 289,
-  },
-  {
-    id: 3,
-    name: 'Handcrafted Wooden Photo Frame',
-    href: '#',
-    price: '₹320',
-    imageSrc: 'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400&h=400&fit=crop',
-    imageAlt: 'Intricately carved wooden photo frame with traditional design.',
-    description: 'Handcrafted wooden photo frame with intricate traditional carvings. Perfect for showcasing cherished memories. Available in multiple sizes.',
-    category: 'Home Decor',
-    quantity: 18,
-    sku: 'HWF-003',
-    status: 'Active',
-    totalSold: 98,
-  },
-  {
-    id: 4,
-    name: 'Customized Rakhi Set',
-    href: '#',
-    price: '₹280',
-    imageSrc: 'https://images.unsplash.com/photo-1604890563134-85537bd4c981?w=400&h=400&fit=crop',
-    imageAlt: 'Beautiful rakhi with beads and decorative elements.',
-    description: 'Handmade rakhi with traditional and modern designs. Includes rakhi, roli, chawal, and a sweet box. Customization available for names.',
-    category: 'Festival Special',
-    quantity: 50,
-    sku: 'RAK-004',
-    status: 'Active',
-    totalSold: 420,
-  },
-  {
-    id: 5,
-    name: 'Handloom Table Runner',
-    href: '#',
-    price: '₹650',
-    imageSrc: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=400&fit=crop',
-    imageAlt: 'Handwoven cotton table runner with traditional patterns.',
-    description: 'Beautiful handloom table runner made by local artisans. Features traditional patterns and vibrant colors. Adds elegance to any table.',
-    category: 'Home Decor',
-    quantity: 12,
-    sku: 'HTR-005',
-    status: 'Active',
-    totalSold: 67,
-  },
-  {
-    id: 6,
-    name: 'Personalized Mug Set',
-    href: '#',
-    price: '₹350',
-    imageSrc: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&h=400&fit=crop',
-    imageAlt: 'Customized ceramic mugs with printed photos.',
-    description: 'High-quality ceramic mugs with full-color photo print. Microwave and dishwasher safe. Perfect gift for birthdays, anniversaries, and special occasions.',
-    category: 'Customized Gifts',
-    quantity: 35,
-    sku: 'PMG-006',
-    status: 'Active',
-    totalSold: 185,
-  },
-  {
-    id: 7,
-    name: 'Terracotta Home Decor',
-    href: '#',
-    price: '₹520',
-    imageSrc: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400&h=400&fit=crop',
-    imageAlt: 'Handcrafted terracotta decorative items.',
-    description: 'Beautiful handcrafted terracotta home decor items. Made by skilled artisans using traditional techniques. Each piece is unique.',
-    category: 'Handicrafts',
-    quantity: 22,
-    sku: 'THD-007',
-    status: 'Active',
-    totalSold: 134,
-  },
-  {
-    id: 8,
-    name: 'Festival Gift Hamper',
-    href: '#',
-    price: '₹1200',
-    imageSrc: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=400&h=400&fit=crop',
-    imageAlt: 'Luxurious festival gift hamper with various items.',
-    description: 'Premium festival gift hamper containing gourmet chocolates, dry fruits, scented candles, and decorative items. Perfect for gifting to loved ones.',
-    category: 'Gift Hampers',
-    quantity: 15,
-    sku: 'FGH-008',
-    status: 'Active',
-    totalSold: 89,
-  },
-]
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 export default function ProductDetails() {
-  const [products, setProducts] = useState(initialProducts)
+  const { user } = useAuth()
+  
+  // State for products from Supabase
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      // Transform data to match component's expected format
+      const transformedProducts = data?.map(product => ({
+        id: product.id,
+        productId: product.id, // Keep UUID for editing
+        name: product.name || '',
+        price: product.price ? `₹${product.price}` : '₹0',
+        priceValue: product.price || 0,
+        imageSrc: product.image_src || product.image_url || 'https://via.placeholder.com/400',
+        imageAlt: product.image_alt || product.name || 'Product image',
+        description: product.description || '',
+        category: product.category || '',
+        quantity: product.quantity || 0,
+        sku: product.sku || '',
+        status: product.status || 'Active',
+        totalSold: product.total_sold || 0,
+        tags: product.tags || [],
+        created_at: product.created_at,
+        updated_at: product.updated_at
+      })) || []
+
+      setProducts(transformedProducts)
+    } catch (err) {
+      console.error('Error fetching products:', err.message)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch products when user changes
+  useEffect(() => {
+    if (user) {
+      fetchProducts()
+    }
+  }, [user])
+
+  // Set up real-time subscription for products
+  useEffect(() => {
+    if (!user) return
+
+    const productsChannel = supabase
+      .channel('products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Product change detected:', payload)
+          fetchProducts() // Refresh products on any change
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(productsChannel)
+    }
+  }, [user])
 
   // Open modal with product data
   const handleProductClick = (product) => {
@@ -128,41 +98,110 @@ export default function ProductDetails() {
     setIsModalOpen(true)
   }
 
-  // Handle saving product changes
-  const handleSaveProduct = (updatedProduct) => {
-    setProducts((prevProducts) =>
-      prevProducts.map((p) =>
-        p.id === updatedProduct.id ? { ...p, ...updatedProduct } : p
-      )
-    )
-  }
-
   // Handle adding new product
   const handleAddProduct = () => {
     const newProduct = {
-      id: products.length + 1,
+      id: null, // Will be set by Supabase
+      productId: null,
       name: 'New Product',
       price: '₹0',
+      priceValue: 0,
       imageSrc: 'https://via.placeholder.com/400',
       imageAlt: 'New product image',
       description: 'Add product description here',
       category: '',
       quantity: 0,
-      sku: `NP-${String(products.length + 1).padStart(3, '0')}`,
+      sku: '', // Will be auto-generated by Supabase
       status: 'Active',
+      totalSold: 0,
+      tags: [],
+      isNew: true
     }
     setSelectedProduct(newProduct)
     setIsModalOpen(true)
   }
 
-  // Handle product save (either new or existing)
-  const handleSave = (productData) => {
-    if (selectedProduct && selectedProduct.id <= products.length) {
-      // Update existing product
-      handleSaveProduct(productData)
-    } else {
-      // Add new product
-      setProducts((prev) => [...prev, { ...productData, id: prev.length + 1 }])
+  // Handle product save (insert or update in Supabase)
+  const handleSave = async (productData) => {
+    if (!user) return
+
+    try {
+      // Remove UI-specific fields (keep price in supabaseData)
+      const { productId, isNew, priceValue, ...supabaseData } = productData
+      
+      // Format data for Supabase
+      const supabaseProductData = {
+        user_id: user.id,
+        name: supabaseData.name,
+        price: parseFloat(supabaseData.price?.replace(/[₹$]/g, '') || 0),
+        description: supabaseData.description || '',
+        category: supabaseData.category || 'Other',
+        quantity: parseInt(supabaseData.quantity) || 0,
+        sku: supabaseData.sku || null, // Will be auto-generated if null
+        status: supabaseData.status || 'Active',
+        image_src: supabaseData.imageSrc || null,
+        image_alt: supabaseData.imageAlt || null,
+        image_url: supabaseData.imageSrc || null,
+        tags: supabaseData.tags || []
+      }
+
+      if (productData.isNew) {
+        // Insert new product
+        const { data, error: insertError } = await supabase
+          .from('products')
+          .insert([supabaseProductData])
+          .select()
+
+        if (insertError) throw insertError
+        
+        // The real-time subscription will automatically update the list
+        console.log('Product created successfully:', data)
+      } else {
+        // Update existing product
+        const { error: updateError } = await supabase
+          .from('products')
+          .update(supabaseProductData)
+          .eq('id', productData.productId)
+          .eq('user_id', user.id)
+
+        if (updateError) throw updateError
+        
+        // The real-time subscription will automatically update the list
+        console.log('Product updated successfully')
+      }
+      
+      // Close modal - real-time subscription will update the list
+      setIsModalOpen(false)
+      setSelectedProduct(null)
+    } catch (err) {
+      console.error('Error saving product:', err.message)
+      alert('Failed to save product: ' + err.message)
+    }
+  }
+
+  // Handle delete product
+  const handleDeleteProduct = async (productId) => {
+    if (!user) return
+    
+    const confirmDelete = window.confirm('Are you sure you want to delete this product?')
+    if (!confirmDelete) return
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId)
+        .eq('user_id', user.id)
+
+      if (deleteError) throw deleteError
+      
+      // The real-time subscription will automatically update the list
+      console.log('Product deleted successfully')
+      setIsModalOpen(false)
+      setSelectedProduct(null)
+    } catch (err) {
+      console.error('Error deleting product:', err.message)
+      alert('Failed to delete product: ' + err.message)
     }
   }
 
@@ -173,9 +212,17 @@ export default function ProductDetails() {
         return 'bg-emerald-500/10 text-emerald-400'
       case 'Inactive':
         return 'bg-gray-500/10 text-gray-400'
+      case 'Discontinued':
+        return 'bg-red-500/10 text-red-400'
       default:
         return 'bg-gray-500/10 text-gray-400'
     }
+  }
+
+  // Format price for display
+  const formatPrice = (priceStr) => {
+    if (!priceStr) return '₹0'
+    return priceStr
   }
 
   return (
@@ -202,63 +249,89 @@ export default function ProductDetails() {
           </button>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              onClick={() => handleProductClick(product)}
-              className="group bg-[#0A0A0A] border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 hover:bg-gray-900 transition-all duration-300 cursor-pointer"
-            >
-              <div className="relative aspect-square overflow-hidden">
-                <img
-                  alt={product.imageAlt}
-                  src={product.imageSrc}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Status badge */}
-                <div className="absolute top-3 right-3">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getStatusBadge(product.status)}`}>
-                    {product.status}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-white group-hover:text-indigo-400 transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">{product.category}</p>
-                  </div>
-                  <p className="text-lg font-semibold text-white ml-2">{product.price}</p>
-                </div>
-                
-                {/* Quick stats */}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-800">
-                  <div className="flex items-center text-xs text-slate-400">
-                    <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                    {product.quantity} in stock
-                  </div>
-                  <div className="flex items-center text-xs text-slate-400">
-                    <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    {product.sku}
-                  </div>
-                </div>
-              </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            <p className="mt-4 text-slate-400">Loading products...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-12">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4">
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-          ))}
-        </div>
+            <p className="text-lg text-red-400">Error loading products</p>
+            <p className="text-sm text-slate-400 mt-1">{error}</p>
+          </div>
+        )}
+
+        {/* Products Grid */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => handleProductClick(product)}
+                className="group bg-[#0A0A0A] border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 hover:bg-gray-900 transition-all duration-300 cursor-pointer"
+              >
+                <div className="relative aspect-square overflow-hidden">
+                  <img
+                    alt={product.imageAlt}
+                    src={product.imageSrc}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/400'
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Status badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${getStatusBadge(product.status)}`}>
+                      {product.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-white group-hover:text-indigo-400 transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-1">{product.category}</p>
+                    </div>
+                    <p className="text-lg font-semibold text-white ml-2">{formatPrice(product.price)}</p>
+                  </div>
+                  
+                  {/* Quick stats */}
+                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-800">
+                    <div className="flex items-center text-xs text-slate-400">
+                      <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      {product.quantity} in stock
+                    </div>
+                    <div className="flex items-center text-xs text-slate-400">
+                      <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      {product.sku}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Empty state if no products */}
-        {products.length === 0 && (
+        {!loading && !error && products.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -289,6 +362,8 @@ export default function ProductDetails() {
         }}
         product={selectedProduct}
         onSave={handleSave}
+        onDelete={handleDeleteProduct}
+        user={user}
       />
     </div>
   )
