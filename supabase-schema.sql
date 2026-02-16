@@ -125,6 +125,7 @@ CREATE TABLE products (
     status product_status DEFAULT 'Active',
     image_url TEXT,
     image_alt TEXT,
+    image_src TEXT,
     total_sold INTEGER DEFAULT 0,
     tags TEXT[],
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -176,6 +177,7 @@ CREATE TABLE customers (
     name TEXT NOT NULL,
     phone TEXT,
     instagram TEXT,
+    insta TEXT,
     email TEXT,
     address TEXT,
     notes TEXT,
@@ -231,6 +233,7 @@ CREATE TABLE orders (
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
+    customer_whatsapp TEXT,
     customer_instagram TEXT,
     total_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     order_status order_status DEFAULT 'Pending',
@@ -238,6 +241,7 @@ CREATE TABLE orders (
     payment_type payment_type,
     notes TEXT,
     products JSONB DEFAULT '[]'::jsonb,
+    source TEXT,
     invoice_date DATE,
     due_date DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -749,6 +753,11 @@ CREATE INDEX idx_orders_status ON orders(order_status);
 CREATE INDEX idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
 
+CREATE INDEX idx_orders_source ON orders(source);
+CREATE INDEX idx_orders_invoice_date ON orders(invoice_date);
+CREATE INDEX idx_orders_due_date ON orders(due_date);
+CREATE INDEX idx_orders_customer_whatsapp ON orders(customer_whatsapp);
+
 CREATE INDEX idx_products_user_id ON products(user_id);
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_status ON products(status);
@@ -756,6 +765,7 @@ CREATE INDEX idx_products_sku ON products(sku);
 
 CREATE INDEX idx_customers_user_id ON customers(user_id);
 CREATE INDEX idx_customers_instagram ON customers(instagram);
+CREATE INDEX idx_customers_insta ON customers(insta);
 
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON order_items(product_id);
