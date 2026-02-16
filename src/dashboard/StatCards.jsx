@@ -1,37 +1,85 @@
-import React from 'react'
-
-// Sample data for demonstration (will be replaced with actual data)
-const sampleProducts = [
-  { id: 1, name: 'Gift Box - Anniversary', price: 850, quantity: 25, totalSold: 156 },
-  { id: 2, name: 'Handmade Scented Candle Set', price: 450, quantity: 40, totalSold: 289 },
-  { id: 3, name: 'Handcrafted Wooden Photo Frame', price: 320, quantity: 18, totalSold: 98 },
-  { id: 4, name: 'Customized Rakhi Set', price: 280, quantity: 50, totalSold: 420 },
-  { id: 5, name: 'Handloom Table Runner', price: 650, quantity: 12, totalSold: 67 },
-  { id: 6, name: 'Personalized Mug Set', price: 350, quantity: 35, totalSold: 185 },
-  { id: 7, name: 'Terracotta Home Decor', price: 520, quantity: 22, totalSold: 134 },
-  { id: 8, name: 'Festival Gift Hamper', price: 1200, quantity: 15, totalSold: 89 },
-]
-
-const sampleOrders = [
-  { id: '#ORD-001', totalPrice: 1250.00, orderStatus: 'Completed' },
-  { id: '#ORD-002', totalPrice: 2800.00, orderStatus: 'Pending' },
-  { id: '#ORD-003', totalPrice: 650.00, orderStatus: 'Completed' },
-  { id: '#ORD-004', totalPrice: 1800.00, orderStatus: 'Cancelled' },
-  { id: '#ORD-005', totalPrice: 3200.00, orderStatus: 'Completed' },
-  { id: '#ORD-006', totalPrice: 890.00, orderStatus: 'Pending' },
-  { id: '#ORD-007', totalPrice: 450.00, orderStatus: 'Completed' },
-  { id: '#ORD-008', totalPrice: 2100.00, orderStatus: 'Processing' },
-]
-
-// Calculate metrics
-const totalOrdersReceived = sampleProducts.reduce((sum, p) => sum + (p.totalSold || 0), 0)
-const totalRevenue = sampleOrders
-  .filter(o => o.orderStatus === 'Completed')
-  .reduce((sum, o) => sum + o.totalPrice, 0)
-const totalProductsListed = sampleProducts.length
-const totalStockValue = sampleProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0)
+import React, { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const StatCards = () => {
+  const { user } = useAuth()
+  const [stats, setStats] = useState({
+    totalOrdersReceived: 0,
+    totalRevenue: 0,
+    totalProductsListed: 0,
+    totalStockValue: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user) {
+      fetchStats()
+    }
+  }, [user])
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch products data
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('quantity, price, total_sold')
+        .eq('user_id', user.id)
+
+      if (productsError) throw productsError
+
+      // Fetch orders data (completed and paid)
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('total_price, order_status, payment_status')
+        .eq('user_id', user.id)
+        .eq('order_status', 'Completed')
+        .eq('payment_status', 'Paid')
+
+      if (ordersError) throw ordersError
+
+      // Calculate stats
+      const totalOrdersReceived = products?.reduce((sum, p) => sum + (p.total_sold || 0), 0) || 0
+      const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_price || 0), 0) || 0
+      const totalProductsListed = products?.length || 0
+      const totalStockValue = products?.reduce((sum, p) => sum + ((p.price || 0) * (p.quantity || 0)), 0) || 0
+
+      setStats({
+        totalOrdersReceived,
+        totalRevenue,
+        totalProductsListed,
+        totalStockValue
+      })
+    } catch (error) {
+      console.error('Error fetching stats:', error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+        <div className="grid md:grid-cols-4 bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="block p-4 md:p-5 relative bg-[#0A0A0A] animate-pulse">
+              <div className="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
+                <div className="shrink-0 size-5 bg-gray-800 rounded"></div>
+                <div className="grow">
+                  <div className="h-3 bg-gray-800 rounded w-24 mb-2"></div>
+                  <div className="h-6 bg-gray-800 rounded w-20 mb-2"></div>
+                  <div className="h-2 bg-gray-800 rounded w-32"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
 <div class="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
@@ -45,7 +93,7 @@ const StatCards = () => {
             Total Orders Received
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            {totalOrdersReceived.toLocaleString()}
+            {stats.totalOrdersReceived.toLocaleString()}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
@@ -73,7 +121,7 @@ const StatCards = () => {
             Total Revenue
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            ₹{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
@@ -101,7 +149,7 @@ const StatCards = () => {
             Products Listed
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            {totalProductsListed}
+            {stats.totalProductsListed}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">
@@ -129,7 +177,7 @@ const StatCards = () => {
             Stock Value
           </p>
           <h3 class="mt-1 text-xl sm:text-2xl font-semibold text-white">
-            ₹{totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ₹{stats.totalStockValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </h3>
           <div class="mt-1 flex justify-between items-center">
             <p class="text-sm text-slate-400">

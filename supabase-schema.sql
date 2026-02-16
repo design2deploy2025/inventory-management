@@ -603,13 +603,15 @@ DECLARE
     customer_total DECIMAL(10, 2);
     order_count INTEGER;
 BEGIN
-    -- Calculate lifetime value from orders
-    SELECT COALESCE(SUM(total_price), 0), COUNT(*)
+    -- Calculate lifetime value from paid orders
+    SELECT 
+        COALESCE(SUM(total_price), 0), 
+        COUNT(*)
     INTO customer_total, order_count
     FROM orders
     WHERE customer_id = NEW.customer_id
     AND payment_status = 'Paid';
-    
+
     -- Update customer record
     UPDATE customers
     SET 
@@ -617,12 +619,17 @@ BEGIN
         repeat_orders = order_count,
         last_order_date = NEW.created_at::date,
         last_order_details = (
-            SELECT string_agg(p->>'name' || ' - $' || p->>'price', ', ')
-            FROM jsonb_array_elements(NEW.products) AS p
+            SELECT string_agg(
+                (p->>'name') || ' - $' || (p->>'price'),
+                ', '
+            )
+            FROM jsonb_array_elements(
+                COALESCE(NEW.products::jsonb, '[]'::jsonb)
+            ) AS p
         ),
         updated_at = NOW()
     WHERE id = NEW.customer_id;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
