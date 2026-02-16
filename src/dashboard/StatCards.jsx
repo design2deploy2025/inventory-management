@@ -30,18 +30,17 @@ const StatCards = () => {
 
       if (productsError) throw productsError
 
-      // Fetch orders data (completed and paid)
+      // Fetch orders data - count all orders regardless of status
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('total_price, order_status, payment_status')
         .eq('user_id', user.id)
-        .eq('order_status', 'Completed')
-        .eq('payment_status', 'Paid')
 
       if (ordersError) throw ordersError
 
       // Calculate stats
-      const totalOrdersReceived = products?.reduce((sum, p) => sum + (p.total_sold || 0), 0) || 0
+      // Total Orders Received - count all orders for this user (regardless of status)
+      const totalOrdersReceived = orders?.length || 0
       const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_price || 0), 0) || 0
       const totalProductsListed = products?.length || 0
       const totalStockValue = products?.reduce((sum, p) => sum + ((p.price || 0) * (p.quantity || 0)), 0) || 0

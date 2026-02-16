@@ -1,147 +1,16 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import OrderModal from './OrderModal'
 import InvoiceModal from './InvoiceModal'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const MainTable = () => {
-  // Sample orders data with products array for gift/handicraft items
-  const [orders, setOrders] = useState([
-    {
-      id: '#ORD-001',
-      products: [{ id: 1, name: 'Gift Box - Anniversary', price: 1250.00, quantity: 1 }],
-      totalPrice: 1250.00,
-      date: 'Jan 15, 2025',
-      orderStatus: 'Completed',
-      paymentStatus: 'Paid',
-      customerName: 'Priya Sharma',
-      customerPhone: '+91 98765 43210',
-      customerWhatsApp: '+91 98765 43210',
-      customerInstagram: 'priya_sharma',
-      paymentType: 'UPI',
-      notes: 'Add a greeting card',
-      source: 'WhatsApp',
-      invoiceDate: 'Jan 15, 2025',
-      dueDate: 'Jan 22, 2025'
-    },
-    {
-      id: '#ORD-002',
-      products: [{ id: 2, name: 'Handmade Scented Candle Set', price: 2800.00, quantity: 1 }],
-      totalPrice: 2800.00,
-      date: 'Jan 14, 2025',
-      orderStatus: 'Pending',
-      paymentStatus: 'Unpaid',
-      customerName: 'Amit Kumar',
-      customerPhone: '+91 98765 43211',
-      customerWhatsApp: '+91 98765 43211',
-      customerInstagram: 'amit_creations',
-      paymentType: 'Bank Transfer',
-      notes: 'Need by weekend',
-      source: 'Instagram',
-      invoiceDate: 'Jan 14, 2025',
-      dueDate: 'Jan 21, 2025'
-    },
-    {
-      id: '#ORD-003',
-      products: [{ id: 3, name: 'Customized Rakhi Set', price: 650.00, quantity: 1 }],
-      totalPrice: 650.00,
-      date: 'Jan 13, 2025',
-      orderStatus: 'Completed',
-      paymentStatus: 'Paid',
-      customerName: 'Riya Patel',
-      customerPhone: '+91 98765 43212',
-      customerWhatsApp: '+91 98765 43212',
-      customerInstagram: 'riya_gifts',
-      paymentType: 'UPI',
-      notes: 'First-time customer',
-      source: 'WhatsApp',
-      invoiceDate: 'Jan 13, 2025',
-      dueDate: 'Jan 20, 2025'
-    },
-    {
-      id: '#ORD-004',
-      products: [{ id: 4, name: 'Festival Gift Hamper', price: 1800.00, quantity: 1 }],
-      totalPrice: 1800.00,
-      date: 'Jan 12, 2025',
-      orderStatus: 'Cancelled',
-      paymentStatus: 'Failed',
-      customerName: 'Sneha Reddy',
-      customerPhone: '+91 98765 43213',
-      customerWhatsApp: '+91 98765 43213',
-      customerInstagram: 'sneha_handmade',
-      paymentType: 'UPI',
-      notes: 'Customer requested cancellation',
-      source: 'Instagram',
-      invoiceDate: 'Jan 12, 2025',
-      dueDate: 'Jan 19, 2025'
-    },
-    {
-      id: '#ORD-005',
-      products: [{ id: 5, name: 'Handloom Table Runner', price: 3200.00, quantity: 1 }],
-      totalPrice: 3200.00,
-      date: 'Jan 11, 2025',
-      orderStatus: 'Completed',
-      paymentStatus: 'Paid',
-      customerName: 'Vikram Singh',
-      customerPhone: '+91 98765 43214',
-      customerWhatsApp: '+91 98765 43214',
-      customerInstagram: 'vikram_home',
-      paymentType: 'Cash',
-      notes: 'Regular customer',
-      source: 'WhatsApp',
-      invoiceDate: 'Jan 11, 2025',
-      dueDate: 'Jan 18, 2025'
-    },
-    {
-      id: '#ORD-006',
-      products: [{ id: 6, name: 'Personalized Mug Set', price: 890.00, quantity: 1 }],
-      totalPrice: 890.00,
-      date: 'Jan 10, 2025',
-      orderStatus: 'Pending',
-      paymentStatus: 'Unpaid',
-      customerName: 'Anjali Mehta',
-      customerPhone: '+91 98765 43215',
-      customerWhatsApp: '+91 98765 43215',
-      customerInstagram: 'anjali_designs',
-      paymentType: 'Wallet',
-      notes: 'Custom design required',
-      source: 'Instagram',
-      invoiceDate: 'Jan 10, 2025',
-      dueDate: 'Jan 17, 2025'
-    },
-    {
-      id: '#ORD-007',
-      products: [{ id: 7, name: 'Terracotta Home Decor', price: 450.00, quantity: 1 }],
-      totalPrice: 450.00,
-      date: 'Jan 9, 2025',
-      orderStatus: 'Completed',
-      paymentStatus: 'Paid',
-      customerName: 'Kavita Joshi',
-      customerPhone: '+91 98765 43216',
-      customerWhatsApp: '+91 98765 43216',
-      customerInstagram: 'kavita_art',
-      paymentType: 'COD',
-      notes: 'Quick delivery needed',
-      source: 'WhatsApp',
-      invoiceDate: 'Jan 9, 2025',
-      dueDate: 'Jan 16, 2025'
-    },
-    {
-      id: '#ORD-008',
-      products: [{ id: 8, name: 'Handcrafted Wooden Photo Frame', price: 2100.00, quantity: 1 }],
-      totalPrice: 2100.00,
-      date: 'Jan 8, 2025',
-      orderStatus: 'Processing',
-      paymentStatus: 'Paid',
-      customerName: 'Rohit Verma',
-      customerPhone: '+91 98765 43217',
-      customerWhatsApp: '+91 98765 43217',
-      customerInstagram: 'rohit_frames',
-      paymentType: 'UPI',
-      notes: 'Rush order for anniversary',
-      source: 'WhatsApp',
-      invoiceDate: 'Jan 8, 2025',
-      dueDate: 'Jan 15, 2025'
-    },
-  ])
+  const { user } = useAuth()
+  
+  // State for orders from Supabase
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
@@ -152,6 +21,86 @@ const MainTable = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState('All')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All')
+
+  // Fetch orders from Supabase
+  const fetchOrders = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (fetchError) throw fetchError
+
+      // Transform data to match component's expected format
+      const transformedOrders = data?.map(order => ({
+        id: order.order_number,
+        orderId: order.id, // Keep the UUID for editing
+        products: order.products || [],
+        totalPrice: order.total_price || 0,
+        date: order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+        orderStatus: order.order_status || 'Pending',
+        paymentStatus: order.payment_status || 'Unpaid',
+        customerName: order.customer_name || '',
+        customerPhone: order.customer_phone || '',
+        customerWhatsApp: order.customer_whatsapp || '',
+        customerInstagram: order.customer_instagram || '',
+        paymentType: order.payment_type || 'Cash',
+        notes: order.notes || '',
+        source: order.source || 'WhatsApp',
+        invoiceDate: order.invoice_date || '',
+        dueDate: order.due_date || '',
+        created_at: order.created_at,
+        updated_at: order.updated_at
+      })) || []
+
+      setOrders(transformedOrders)
+    } catch (err) {
+      console.error('Error fetching orders:', err.message)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch orders when user changes
+  useEffect(() => {
+    if (user) {
+      fetchOrders()
+    }
+  }, [user])
+
+  // Set up real-time subscription for orders
+  useEffect(() => {
+    if (!user) return
+
+    const ordersChannel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Order change detected:', payload)
+          fetchOrders() // Refresh orders on any change
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(ordersChannel)
+    }
+  }, [user])
 
   // Order Status badge color helper
   const getOrderStatusBadge = (status) => {
@@ -243,36 +192,113 @@ const MainTable = () => {
     setIsOrderModalOpen(true)
   }
 
-  // Handle saving new order
-  const handleSaveOrder = (orderData) => {
-    const newOrder = {
-      id: orderData.id,
-      products: orderData.products,
-      totalPrice: orderData.totalPrice,
-      date: orderData.date,
-      orderStatus: orderData.orderStatus,
-      paymentStatus: orderData.paymentStatus,
-      customerName: orderData.customerName,
-      customerPhone: orderData.customerPhone,
-      customerWhatsApp: orderData.customerWhatsApp,
-      customerInstagram: orderData.customerInstagram,
-      paymentType: orderData.paymentType,
-      notes: orderData.notes,
-      source: orderData.source,
-      invoiceDate: orderData.date,
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  // Handle saving new order to Supabase
+  const handleSaveOrder = async (orderData) => {
+    if (!user) return
+
+    try {
+      // Prepare order data for Supabase
+      const supabaseOrderData = {
+        user_id: user.id,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        customer_whatsapp: orderData.customerWhatsApp || orderData.customerPhone,
+        customer_instagram: orderData.customerInstagram,
+        total_price: orderData.totalPrice,
+        order_status: orderData.orderStatus,
+        payment_status: orderData.paymentStatus,
+        payment_type: orderData.paymentType,
+        notes: orderData.notes,
+        products: orderData.products,
+        source: orderData.source || 'WhatsApp',
+        invoice_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      }
+
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([supabaseOrderData])
+        .select()
+
+      if (error) throw error
+
+      // The real-time subscription will automatically update the list
+      // But we can also optimistically add to local state
+      if (data && data[0]) {
+        const newOrder = {
+          id: data[0].order_number,
+          orderId: data[0].id,
+          products: data[0].products || [],
+          totalPrice: data[0].total_price || 0,
+          date: new Date(data[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          orderStatus: data[0].order_status || 'Pending',
+          paymentStatus: data[0].payment_status || 'Unpaid',
+          customerName: data[0].customer_name || '',
+          customerPhone: data[0].customer_phone || '',
+          customerWhatsApp: data[0].customer_whatsapp || '',
+          customerInstagram: data[0].customer_instagram || '',
+          paymentType: data[0].payment_type || 'Cash',
+          notes: data[0].notes || '',
+          source: data[0].source || 'WhatsApp',
+          invoiceDate: data[0].invoice_date || '',
+          dueDate: data[0].due_date || '',
+          created_at: data[0].created_at,
+          updated_at: data[0].updated_at
+        }
+        setOrders((prev) => [newOrder, ...prev])
+      }
+    } catch (err) {
+      console.error('Error creating order:', err.message)
+      alert('Failed to create order: ' + err.message)
     }
-    
-    setOrders((prev) => [newOrder, ...prev])
   }
 
-  // Handle updating existing order
-  const handleUpdateOrder = (updatedOrderData) => {
-    setOrders((prev) =>
-      prev.map(order =>
-        order.id === updatedOrderData.id ? { ...updatedOrderData, invoiceDate: order.invoiceDate, dueDate: order.dueDate } : order
+  // Handle updating existing order in Supabase
+  const handleUpdateOrder = async (updatedOrderData) => {
+    if (!user || !updatedOrderData.orderId) return
+
+    try {
+      const supabaseOrderData = {
+        customer_name: updatedOrderData.customerName,
+        customer_phone: updatedOrderData.customerPhone,
+        customer_whatsapp: updatedOrderData.customerWhatsApp || updatedOrderData.customerPhone,
+        customer_instagram: updatedOrderData.customerInstagram,
+        total_price: updatedOrderData.totalPrice,
+        order_status: updatedOrderData.orderStatus,
+        payment_status: updatedOrderData.paymentStatus,
+        payment_type: updatedOrderData.paymentType,
+        notes: updatedOrderData.notes,
+        products: updatedOrderData.products,
+        source: updatedOrderData.source,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(supabaseOrderData)
+        .eq('id', updatedOrderData.orderId)
+        .eq('user_id', user.id)
+
+      if (error) throw error
+
+      // The real-time subscription will automatically update the list
+      // But we can also optimistically update local state
+      setOrders((prev) =>
+        prev.map(order =>
+          order.id === updatedOrderData.id 
+            ? { 
+                ...order,
+                ...updatedOrderData,
+                invoiceDate: order.invoiceDate, 
+                dueDate: order.dueDate 
+              } 
+            : order
+        )
       )
-    )
+    } catch (err) {
+      console.error('Error updating order:', err.message)
+      alert('Failed to update order: ' + err.message)
+    }
   }
 
   return (
@@ -369,102 +395,119 @@ const MainTable = () => {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#0A0A0A]">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Product Names
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Cost
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Source
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Order Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Payment Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Invoice
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Edit Order
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {filteredOrders.length > 0 ? (
-                  filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-900/50 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {order.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {order.products.map(p => p.name).join(', ')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
-                        {formatPrice(order.totalPrice)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                        {order.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(order.source)}`}>
-                          {order.source}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getOrderStatusBadge(order.orderStatus)}`}>
-                          {order.orderStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getPaymentStatusBadge(order.paymentStatus)}`}>
-                          {order.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleViewInvoice(order)}
-                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                        >
-                          View
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleEditOrder(order)}
-                          className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
-                        >
-                          Edit
-                        </button>
+            {loading ? (
+              <div className="px-6 py-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                <p className="mt-4 text-slate-400">Loading orders...</p>
+              </div>
+            ) : error ? (
+              <div className="px-6 py-12 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4">
+                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-lg text-red-400">Error loading orders</p>
+                <p className="text-sm text-slate-400 mt-1">{error}</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-[#0A0A0A]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Order ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Product Names
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Cost
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Source
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Order Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Payment Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Invoice
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                      Edit Order
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-900/50 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                          {order.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                          {order.products && order.products.length > 0 ? order.products.map(p => p.name).join(', ') : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
+                          {formatPrice(order.totalPrice)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                          {order.date}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(order.source)}`}>
+                            {order.source}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getOrderStatusBadge(order.orderStatus)}`}>
+                            {order.orderStatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getPaymentStatusBadge(order.paymentStatus)}`}>
+                            {order.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleViewInvoice(order)}
+                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                          >
+                            View
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => handleEditOrder(order)}
+                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center">
+                          <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-lg">No orders found</p>
+                          <p className="text-sm mt-1">Try adjusting your filters</p>
+                        </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
-                      <div className="flex flex-col items-center justify-center">
-                        <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-lg">No orders found</p>
-                        <p className="text-sm mt-1">Try adjusting your filters</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Footer */}
@@ -494,6 +537,7 @@ const MainTable = () => {
         onSave={handleSaveOrder}
         onUpdate={handleUpdateOrder}
         orderToEdit={orderToEdit}
+        user={user}
       />
 
       {/* Invoice Modal */}

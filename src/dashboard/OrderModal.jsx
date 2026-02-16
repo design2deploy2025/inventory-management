@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
-// Sample products data (shared with ProductDetails)
+// Sample products data (fallback if no products in DB)
 const sampleProducts = [
   { id: 1, name: 'Earthen Bottle', price: 48, category: 'Home & Garden' },
   { id: 2, name: 'Nomad Tumbler', price: 35, category: 'Electronics' },
@@ -12,23 +13,89 @@ const sampleProducts = [
   { id: 8, name: 'Focus Carry Pouch', price: 32, category: 'Accessories' },
 ]
 
-const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
+const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) => {
+  const [products, setProducts] = useState([])
+  const [customers, setCustomers] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  
   const [formData, setFormData] = useState({
     orderId: '',
     customerName: '',
     customerPhone: '',
+    customerWhatsApp: '',
     customerInstagram: '',
     paymentType: 'Cash',
     paymentStatus: 'Unpaid',
     orderStatus: 'Pending',
     selectedProducts: [],
     notes: '',
+    source: 'WhatsApp',
   })
 
   const [nextOrderNumber, setNextOrderNumber] = useState(1)
 
   // Determine if we're in edit mode
   const isEditMode = !!orderToEdit
+
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    if (!user) return
+    
+    try {
+      setLoadingProducts(true)
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, category')
+        .eq('user_id', user.id)
+        .eq('status', 'Active')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        setProducts(data)
+      } else {
+        // Fallback to sample products if no products in DB
+        setProducts(sampleProducts)
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err.message)
+      // Fallback to sample products on error
+      setProducts(sampleProducts)
+    } finally {
+      setLoadingProducts(false)
+    }
+  }
+
+  // Fetch customers from Supabase
+  const fetchCustomers = async () => {
+    if (!user) return
+    
+    try {
+      setLoadingCustomers(true)
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone, whatsapp, instagram')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      setCustomers(data || [])
+    } catch (err) {
+      console.error('Error fetching customers:', err.message)
+    } finally {
+      setLoadingCustomers(false)
+    }
+  }
+
+  // Fetch products and customers when modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchProducts()
+      fetchCustomers()
+    }
+  }, [isOpen, user])
 
   // Initialize form data when modal opens
   useEffect(() => {
@@ -39,12 +106,14 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
           orderId: orderToEdit.id,
           customerName: orderToEdit.customerName || '',
           customerPhone: orderToEdit.customerPhone || '',
+          customerWhatsApp: orderToEdit.customerWhatsApp || '',
           customerInstagram: orderToEdit.customerInstagram || '',
           paymentType: orderToEdit.paymentType || 'Cash',
           paymentStatus: orderToEdit.paymentStatus || 'Unpaid',
           orderStatus: orderToEdit.orderStatus || 'Pending',
           selectedProducts: orderToEdit.products || [],
           notes: orderToEdit.notes || '',
+          source: orderToEdit.source || 'WhatsApp',
         })
       } else {
         // Create mode: generate new order ID
@@ -54,16 +123,44 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
           orderId: `#ORD-${orderNumber}`,
           customerName: '',
           customerPhone: '',
+          customerWhatsApp: '',
           customerInstagram: '',
           paymentType: 'Cash',
           paymentStatus: 'Unpaid',
           orderStatus: 'Pending',
           selectedProducts: [],
           notes: '',
+          source: 'WhatsApp',
         })
       }
     }
   }, [isOpen, isEditMode, orderToEdit])
+
+  // Handle customer selection
+  const handleCustomerSelect = (e) => {
+    const customerId = e.target.value
+    if (!customerId) {
+      setFormData((prev) => ({
+        ...prev,
+        customerName: '',
+        customerPhone: '',
+        customerWhatsApp: '',
+        customerInstagram: '',
+      }))
+      return
+    }
+
+    const customer = customers.find(c => c.id === customerId)
+    if (customer) {
+      setFormData((prev) => ({
+        ...prev,
+        customerName: customer.name || '',
+        customerPhone: customer.phone || '',
+        customerWhatsApp: customer.whatsapp || '',
+        customerInstagram: customer.instagram || '',
+      }))
+    }
+  }
 
   // Handle input changes
   const handleChange = (e) => {
@@ -135,6 +232,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
       id: formData.orderId,
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
+      customerWhatsApp: formData.customerWhatsApp,
       customerInstagram: formData.customerInstagram,
       paymentType: formData.paymentType,
       paymentStatus: formData.paymentStatus,
@@ -142,6 +240,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
       products: formData.selectedProducts,
       totalPrice: calculateTotal(),
       notes: formData.notes,
+      source: formData.source,
       date: isEditMode 
         ? (orderToEdit?.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
         : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -164,12 +263,14 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
       orderId: '',
       customerName: '',
       customerPhone: '',
+      customerWhatsApp: '',
       customerInstagram: '',
       paymentType: 'Cash',
       paymentStatus: 'Unpaid',
       orderStatus: 'Pending',
       selectedProducts: [],
       notes: '',
+      source: 'WhatsApp',
     })
   }
 
@@ -370,107 +471,122 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
                     Select Products
                   </h3>
 
-                  {/* Available Products */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    {sampleProducts.map((product) => {
-                      const isSelected = formData.selectedProducts.some((p) => p.id === product.id)
-                      return (
-                        <div
-                          key={product.id}
-                          onClick={() => handleProductToggle(product)}
-                          className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                            isSelected
-                              ? 'bg-indigo-500/10 border-indigo-500/50'
-                              : 'bg-gray-900 border-gray-700 hover:border-gray-600'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                  {/* Loading State */}
+                  {loadingProducts ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500"></div>
+                      <span className="ml-3 text-slate-400">Loading products...</span>
+                    </div>
+                  ) : products.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-slate-400">No products found</p>
+                      <p className="text-sm text-slate-500 mt-1">Add products to your inventory first</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Available Products */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        {products.map((product) => {
+                          const isSelected = formData.selectedProducts.some((p) => p.id === product.id || p.id === product.id)
+                          return (
+                            <div
+                              key={product.id}
+                              onClick={() => handleProductToggle(product)}
+                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
                                 isSelected
-                                  ? 'bg-indigo-600 border-indigo-600'
-                                  : 'border-gray-600'
-                              }`}>
-                                {isSelected && (
-                                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-white">{product.name}</p>
-                                <p className="text-xs text-slate-400">{product.category}</p>
+                                  ? 'bg-indigo-500/10 border-indigo-500/50'
+                                  : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                                    isSelected
+                                      ? 'bg-indigo-600 border-indigo-600'
+                                      : 'border-gray-600'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-white">{product.name}</p>
+                                    <p className="text-xs text-slate-400">{product.category}</p>
+                                  </div>
+                                </div>
+                                <span className="text-sm font-semibold text-white">₹{product.price}</span>
                               </div>
                             </div>
-                            <span className="text-sm font-semibold text-white">${product.price}</span>
+                          )
+                        })}
+                      </div>
+
+                      {/* Selected Products List */}
+                      {formData.selectedProducts.length > 0 && (
+                        <div className="border-t border-gray-700 pt-4 mt-4">
+                          <h4 className="text-sm font-medium text-white mb-3">Selected Products</h4>
+                          <div className="space-y-3">
+                            {formData.selectedProducts.map((product) => (
+                              <div
+                                key={product.id}
+                                className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-700"
+                              >
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-white">{product.name}</p>
+                                </div>
+                                
+                                {/* Quantity */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-400">Qty:</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={product.quantity}
+                                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                    className="w-16 px-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  />
+                                </div>
+
+                                {/* Price Override */}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-slate-400">Price:</span>
+                                  <div className="relative">
+                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={product.price}
+                                      onChange={(e) => handlePriceChange(product.id, e.target.value)}
+                                      className="w-20 pl-5 pr-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Line Total */}
+                                <div className="text-right min-w-[80px]">
+                                  <p className="text-sm font-semibold text-white">
+                                    ₹{(product.price * product.quantity).toFixed(2)}
+                                  </p>
+                                </div>
+
+                                {/* Remove */}
+                                <button
+                                  onClick={() => handleRemoveProduct(product.id)}
+                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Selected Products List */}
-                  {formData.selectedProducts.length > 0 && (
-                    <div className="border-t border-gray-700 pt-4">
-                      <h4 className="text-sm font-medium text-white mb-3">Selected Products</h4>
-                      <div className="space-y-3">
-                        {formData.selectedProducts.map((product) => (
-                          <div
-                            key={product.id}
-                            className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-700"
-                          >
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-white">{product.name}</p>
-                            </div>
-                            
-                            {/* Quantity */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400">Qty:</span>
-                              <input
-                                type="number"
-                                min="1"
-                                value={product.quantity}
-                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                className="w-16 px-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                              />
-                            </div>
-
-                            {/* Price Override */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400">Price:</span>
-                              <div className="relative">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  value={product.price}
-                                  onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                                  className="w-20 pl-5 pr-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Line Total */}
-                            <div className="text-right min-w-[80px]">
-                              <p className="text-sm font-semibold text-white">
-                                ${(product.price * product.quantity).toFixed(2)}
-                              </p>
-                            </div>
-
-                            {/* Remove */}
-                            <button
-                              onClick={() => handleRemoveProduct(product.id)}
-                              className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -519,7 +635,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit }) => {
                     <div className="flex justify-between items-center">
                       <span className="text-base font-medium text-white">Total</span>
                       <span className="text-2xl font-bold text-white">
-                        ${calculateTotal().toFixed(2)}
+                        ₹{calculateTotal().toFixed(2)}
                       </span>
                     </div>
                   </div>
