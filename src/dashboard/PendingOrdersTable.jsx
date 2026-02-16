@@ -3,125 +3,141 @@ import OrderModal from './OrderModal'
 import InvoiceModal from './InvoiceModal'
 
 const PendingOrdersTable = () => {
-  // Sample orders data with products array for invoice support
+  // Sample orders data - Gift items & Handicrafts orders
   const [orders, setOrders] = useState([
     {
       id: '#ORD-001',
-      products: [{ id: 1, name: 'Premium Plan', price: 299.00, quantity: 1 }],
-      totalPrice: 299.00,
+      products: [{ id: 1, name: 'Gift Box - Anniversary', price: 1250.00, quantity: 1 }],
+      totalPrice: 1250.00,
       date: 'Jan 15, 2025',
       orderStatus: 'Completed',
       paymentStatus: 'Paid',
-      customerName: 'John Doe',
+      customerName: 'Priya Sharma',
       customerPhone: '+91 98765 43210',
-      customerInstagram: 'johndoe',
-      paymentType: 'Card',
-      notes: 'Priority support requested',
+      customerWhatsApp: '+91 98765 43210',
+      customerInstagram: 'priya_sharma',
+      paymentType: 'UPI',
+      notes: 'Add a greeting card',
+      source: 'WhatsApp',
       invoiceDate: 'Jan 15, 2025',
       dueDate: 'Jan 22, 2025'
     },
     {
       id: '#ORD-002',
-      products: [{ id: 2, name: 'Enterprise License', price: 1499.00, quantity: 1 }],
-      totalPrice: 1499.00,
+      products: [{ id: 2, name: 'Handmade Scented Candle Set', price: 2800.00, quantity: 1 }],
+      totalPrice: 2800.00,
       date: 'Jan 14, 2025',
       orderStatus: 'Pending',
       paymentStatus: 'Unpaid',
-      customerName: 'Jane Smith',
+      customerName: 'Amit Kumar',
       customerPhone: '+91 98765 43211',
-      customerInstagram: 'janesmith',
+      customerWhatsApp: '+91 98765 43211',
+      customerInstagram: 'amit_creations',
       paymentType: 'Bank Transfer',
-      notes: '',
+      notes: 'Need by weekend',
+      source: 'Instagram',
       invoiceDate: 'Jan 14, 2025',
       dueDate: 'Jan 21, 2025'
     },
     {
       id: '#ORD-003',
-      products: [{ id: 3, name: 'Basic Plan', price: 99.00, quantity: 1 }],
-      totalPrice: 99.00,
+      products: [{ id: 3, name: 'Customized Rakhi Set', price: 650.00, quantity: 1 }],
+      totalPrice: 650.00,
       date: 'Jan 13, 2025',
       orderStatus: 'Completed',
       paymentStatus: 'Paid',
-      customerName: 'Bob Johnson',
+      customerName: 'Riya Patel',
       customerPhone: '+91 98765 43212',
-      customerInstagram: 'bjohnson',
+      customerWhatsApp: '+91 98765 43212',
+      customerInstagram: 'riya_gifts',
       paymentType: 'UPI',
       notes: 'First-time customer',
+      source: 'WhatsApp',
       invoiceDate: 'Jan 13, 2025',
       dueDate: 'Jan 20, 2025'
     },
     {
       id: '#ORD-004',
-      products: [{ id: 1, name: 'Premium Plan', price: 299.00, quantity: 1 }],
-      totalPrice: 299.00,
+      products: [{ id: 4, name: 'Festival Gift Hamper', price: 1800.00, quantity: 1 }],
+      totalPrice: 1800.00,
       date: 'Jan 12, 2025',
       orderStatus: 'Cancelled',
       paymentStatus: 'Failed',
-      customerName: 'Alice Brown',
+      customerName: 'Sneha Reddy',
       customerPhone: '+91 98765 43213',
-      customerInstagram: 'aliceb',
-      paymentType: 'Card',
+      customerWhatsApp: '+91 98765 43213',
+      customerInstagram: 'sneha_handmade',
+      paymentType: 'UPI',
       notes: 'Customer requested cancellation',
+      source: 'Instagram',
       invoiceDate: 'Jan 12, 2025',
       dueDate: 'Jan 19, 2025'
     },
     {
       id: '#ORD-005',
-      products: [{ id: 2, name: 'Enterprise License', price: 1499.00, quantity: 1 }],
-      totalPrice: 1499.00,
+      products: [{ id: 5, name: 'Handloom Table Runner', price: 3200.00, quantity: 1 }],
+      totalPrice: 3200.00,
       date: 'Jan 11, 2025',
       orderStatus: 'Completed',
       paymentStatus: 'Paid',
-      customerName: 'Charlie Wilson',
+      customerName: 'Vikram Singh',
       customerPhone: '+91 98765 43214',
-      customerInstagram: 'cwilson',
+      customerWhatsApp: '+91 98765 43214',
+      customerInstagram: 'vikram_home',
       paymentType: 'Cash',
-      notes: 'Annual contract',
+      notes: 'Regular customer',
+      source: 'WhatsApp',
       invoiceDate: 'Jan 11, 2025',
       dueDate: 'Jan 18, 2025'
     },
     {
       id: '#ORD-006',
-      products: [{ id: 4, name: 'Professional Plan', price: 599.00, quantity: 1 }],
-      totalPrice: 599.00,
+      products: [{ id: 6, name: 'Personalized Mug Set', price: 890.00, quantity: 1 }],
+      totalPrice: 890.00,
       date: 'Jan 10, 2025',
       orderStatus: 'Pending',
       paymentStatus: 'Unpaid',
-      customerName: 'Diana Miller',
+      customerName: 'Anjali Mehta',
       customerPhone: '+91 98765 43215',
-      customerInstagram: 'dianam',
+      customerWhatsApp: '+91 98765 43215',
+      customerInstagram: 'anjali_designs',
       paymentType: 'Wallet',
-      notes: '',
+      notes: 'Custom design required',
+      source: 'Instagram',
       invoiceDate: 'Jan 10, 2025',
       dueDate: 'Jan 17, 2025'
     },
     {
       id: '#ORD-007',
-      products: [{ id: 3, name: 'Basic Plan', price: 99.00, quantity: 1 }],
-      totalPrice: 99.00,
+      products: [{ id: 7, name: 'Terracotta Home Decor', price: 450.00, quantity: 1 }],
+      totalPrice: 450.00,
       date: 'Jan 9, 2025',
       orderStatus: 'Completed',
       paymentStatus: 'Paid',
-      customerName: 'Eve Davis',
+      customerName: 'Kavita Joshi',
       customerPhone: '+91 98765 43216',
-      customerInstagram: 'eved',
+      customerWhatsApp: '+91 98765 43216',
+      customerInstagram: 'kavita_art',
       paymentType: 'COD',
       notes: 'Quick delivery needed',
+      source: 'WhatsApp',
       invoiceDate: 'Jan 9, 2025',
       dueDate: 'Jan 16, 2025'
     },
     {
       id: '#ORD-008',
-      products: [{ id: 4, name: 'Professional Plan', price: 599.00, quantity: 1 }],
-      totalPrice: 599.00,
+      products: [{ id: 8, name: 'Handcrafted Wooden Photo Frame', price: 2100.00, quantity: 1 }],
+      totalPrice: 2100.00,
       date: 'Jan 8, 2025',
       orderStatus: 'Processing',
       paymentStatus: 'Paid',
-      customerName: 'Frank Garcia',
+      customerName: 'Rohit Verma',
       customerPhone: '+91 98765 43217',
-      customerInstagram: 'frankg',
-      paymentType: 'Card',
-      notes: 'Rush order',
+      customerWhatsApp: '+91 98765 43217',
+      customerInstagram: 'rohit_frames',
+      paymentType: 'UPI',
+      notes: 'Rush order for anniversary',
+      source: 'WhatsApp',
       invoiceDate: 'Jan 8, 2025',
       dueDate: 'Jan 15, 2025'
     },
@@ -167,6 +183,18 @@ const PendingOrdersTable = () => {
     }
   }
 
+  // Source badge helper
+  const getSourceBadge = (source) => {
+    switch (source) {
+      case 'WhatsApp':
+        return 'bg-green-500/10 text-green-400'
+      case 'Instagram':
+        return 'bg-pink-500/10 text-pink-400'
+      default:
+        return 'bg-gray-500/10 text-gray-400'
+    }
+  }
+
   // Filter orders based on current filters - Always filter by Pending
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -190,9 +218,9 @@ const PendingOrdersTable = () => {
 
   // Format price to currency
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(price)
   }
 
@@ -229,9 +257,11 @@ const PendingOrdersTable = () => {
       paymentStatus: orderData.paymentStatus,
       customerName: orderData.customerName,
       customerPhone: orderData.customerPhone,
+      customerWhatsApp: orderData.customerWhatsApp,
       customerInstagram: orderData.customerInstagram,
       paymentType: orderData.paymentType,
       notes: orderData.notes,
+      source: orderData.source,
       invoiceDate: orderData.date,
       dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     }
@@ -272,7 +302,7 @@ const PendingOrdersTable = () => {
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-800">
             <h2 className="text-xl font-semibold text-white">Pending Orders</h2>
-            <p className="text-sm text-slate-400 mt-1">Manage and track your pending orders</p>
+            <p className="text-sm text-slate-400 mt-1">Orders awaiting processing from WhatsApp & Instagram</p>
           </div>
 
           {/* Filter Bar */}
@@ -343,6 +373,9 @@ const PendingOrdersTable = () => {
                     Date
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Source
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Order Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -371,6 +404,11 @@ const PendingOrdersTable = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {order.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(order.source)}`}>
+                          {order.source}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getOrderStatusBadge(order.orderStatus)}`}>
@@ -402,7 +440,7 @@ const PendingOrdersTable = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center">
                         <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

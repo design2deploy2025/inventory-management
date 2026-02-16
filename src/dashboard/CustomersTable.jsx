@@ -2,87 +2,103 @@ import React, { useState, useMemo } from 'react'
 import CustomerModal from './CustomerModal'
 
 const CustomersTable = () => {
-  // Sample customers data
+  // Sample customers data - WhatsApp/Instagram sellers customers
   const [customers, setCustomers] = useState([
     {
       id: 'CUST-001',
-      name: 'John Doe',
+      name: 'Priya Sharma',
       phone: '+91 98765 43210',
-      insta: 'johndoe',
+      whatsapp: '+91 98765 43210',
+      insta: 'priya_sharma',
       lastOrderDate: 'Jan 15, 2025',
-      lifetimeValue: 299.00,
-      repeatOrders: 3,
-      lastOrderDetails: 'Premium Plan - $299.00',
+      lifetimeValue: 4500.00,
+      repeatOrders: 5,
+      lastOrderDetails: 'Gift Box - Anniversary - ₹1250',
+      source: 'WhatsApp',
     },
     {
       id: 'CUST-002',
-      name: 'Jane Smith',
+      name: 'Amit Kumar',
       phone: '+91 98765 43211',
-      insta: 'janesmith',
+      whatsapp: '+91 98765 43211',
+      insta: 'amit_creations',
       lastOrderDate: 'Jan 14, 2025',
-      lifetimeValue: 1499.00,
-      repeatOrders: 5,
-      lastOrderDetails: 'Enterprise License - $1499.00',
+      lifetimeValue: 2800.00,
+      repeatOrders: 2,
+      lastOrderDetails: 'Handmade Candle Set - ₹2800',
+      source: 'Instagram',
     },
     {
       id: 'CUST-003',
-      name: 'Bob Johnson',
+      name: 'Riya Patel',
       phone: '+91 98765 43212',
-      insta: 'bjohnson',
+      whatsapp: '+91 98765 43212',
+      insta: 'riya_gifts',
       lastOrderDate: 'Jan 13, 2025',
-      lifetimeValue: 99.00,
+      lifetimeValue: 650.00,
       repeatOrders: 1,
-      lastOrderDetails: 'Basic Plan - $99.00',
+      lastOrderDetails: 'Customized Rakhi Set - ₹650',
+      source: 'WhatsApp',
     },
     {
       id: 'CUST-004',
-      name: 'Alice Brown',
+      name: 'Sneha Reddy',
       phone: '+91 98765 43213',
-      insta: 'aliceb',
+      whatsapp: '+91 98765 43213',
+      insta: 'sneha_handmade',
       lastOrderDate: 'Jan 12, 2025',
-      lifetimeValue: 599.00,
-      repeatOrders: 2,
-      lastOrderDetails: 'Professional Plan - $599.00',
+      lifetimeValue: 1800.00,
+      repeatOrders: 3,
+      lastOrderDetails: 'Festival Gift Hamper - ₹1800',
+      source: 'Instagram',
     },
     {
       id: 'CUST-005',
-      name: 'Charlie Wilson',
+      name: 'Vikram Singh',
       phone: '+91 98765 43214',
-      insta: 'cwilson',
+      whatsapp: '+91 98765 43214',
+      insta: 'vikram_home',
       lastOrderDate: 'Jan 11, 2025',
-      lifetimeValue: 4497.00,
+      lifetimeValue: 8900.00,
       repeatOrders: 8,
-      lastOrderDetails: '3x Enterprise License - $4497.00',
+      lastOrderDetails: '3x Handloom Items - ₹8900',
+      source: 'WhatsApp',
     },
     {
       id: 'CUST-006',
-      name: 'Diana Miller',
+      name: 'Anjali Mehta',
       phone: '+91 98765 43215',
-      insta: 'dianam',
+      whatsapp: '+91 98765 43215',
+      insta: 'anjali_designs',
       lastOrderDate: 'Jan 10, 2025',
       lifetimeValue: 0.00,
       repeatOrders: 0,
       lastOrderDetails: 'No orders yet',
+      source: 'Instagram',
     },
     {
       id: 'CUST-007',
-      name: 'Eve Davis',
+      name: 'Kavita Joshi',
       phone: '+91 98765 43216',
-      insta: 'eved',
+      whatsapp: '+91 98765 43216',
+      insta: 'kavita_art',
       lastOrderDate: 'Jan 9, 2025',
-      lifetimeValue: 396.00,
+      lifetimeValue: 2250.00,
       repeatOrders: 4,
-      lastOrderDetails: '4x Basic Plan - $396.00',
+      lastOrderDetails: 'Terracotta Decor Set - ₹2250',
+      source: 'WhatsApp',
     },
     {
       id: 'CUST-008',
-      name: 'Frank Garcia',
+      name: 'Rohit Verma',
       phone: '+91 98765 43217',
-      insta: 'frankg',
+      whatsapp: '+91 98765 43217',
+      insta: 'rohit_frames',
       lastOrderDate: 'Jan 8, 2025',
-      lifetimeValue: 1198.00,
+      lifetimeValue: 4200.00,
       repeatOrders: 2,
-      lastOrderDetails: '2x Professional Plan - $1198.00',
+      lastOrderDetails: '2x Photo Frames - ₹4200',
+      source: 'WhatsApp',
     },
   ])
   
@@ -92,12 +108,13 @@ const CustomersTable = () => {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
+  const [sourceFilter, setSourceFilter] = useState('All')
 
   // Format price to currency
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(price)
   }
 
@@ -105,10 +122,11 @@ const CustomersTable = () => {
   const clearFilters = () => {
     setSearchTerm('')
     setSortBy('name')
+    setSourceFilter('All')
   }
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm !== '' || sortBy !== 'name'
+  const hasActiveFilters = searchTerm !== '' || sortBy !== 'name' || sourceFilter !== 'All'
 
   // Handle adding new customer
   const handleAddCustomer = () => {
@@ -128,11 +146,13 @@ const CustomersTable = () => {
       id: customerData.id,
       name: customerData.name,
       phone: customerData.phone,
+      whatsapp: customerData.whatsapp,
       insta: customerData.insta,
       lastOrderDate: 'No orders yet',
       lifetimeValue: 0,
       repeatOrders: 0,
       lastOrderDetails: 'No orders yet',
+      source: customerData.source || 'WhatsApp',
     }
     
     setCustomers((prev) => [newCustomer, ...prev])
@@ -164,8 +184,14 @@ const CustomersTable = () => {
         customer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.phone.includes(searchTerm) ||
+        customer.whatsapp.includes(searchTerm) ||
         customer.insta.toLowerCase().includes(searchTerm.toLowerCase())
       )
+    }
+
+    // Source filter
+    if (sourceFilter !== 'All') {
+      result = result.filter(customer => customer.source === sourceFilter)
     }
     
     // Sort
@@ -185,7 +211,7 @@ const CustomersTable = () => {
     })
     
     return result
-  }, [customers, searchTerm, sortBy])
+  }, [customers, searchTerm, sortBy, sourceFilter])
 
   // Repeat order badge color helper
   const getRepeatOrderBadge = (count) => {
@@ -197,6 +223,18 @@ const CustomersTable = () => {
       return 'bg-yellow-500/10 text-yellow-400'
     } else {
       return 'bg-emerald-500/10 text-emerald-400'
+    }
+  }
+
+  // Source badge helper
+  const getSourceBadge = (source) => {
+    switch (source) {
+      case 'WhatsApp':
+        return 'bg-green-500/10 text-green-400'
+      case 'Instagram':
+        return 'bg-pink-500/10 text-pink-400'
+      default:
+        return 'bg-gray-500/10 text-gray-400'
     }
   }
 
@@ -221,7 +259,7 @@ const CustomersTable = () => {
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-800">
             <h2 className="text-xl font-semibold text-white">All Customers</h2>
-            <p className="text-sm text-slate-400 mt-1">Manage and view your customer base</p>
+            <p className="text-sm text-slate-400 mt-1">Manage your WhatsApp & Instagram customers</p>
           </div>
 
           {/* Filter Bar */}
@@ -236,11 +274,24 @@ const CustomersTable = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search by Name, Phone, or Instagram..."
+                  placeholder="Search by Name, Phone, or WhatsApp..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 />
+              </div>
+
+              {/* Source Filter */}
+              <div className="min-w-[150px]">
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+                >
+                  <option value="All">All Sources</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Instagram">Instagram</option>
+                </select>
               </div>
 
               {/* Sort By */}
@@ -286,10 +337,13 @@ const CustomersTable = () => {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Phone
+                    WhatsApp
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Instagram
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Source
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                     Last Order Date
@@ -319,10 +373,15 @@ const CustomersTable = () => {
                         {customer.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                        {customer.phone}
+                        <span className="text-green-400">+91 {customer.whatsapp.slice(-10)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
                         <span className="text-pink-400">@{customer.insta}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(customer.source)}`}>
+                          {customer.source}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                         {customer.lastOrderDate}
@@ -358,7 +417,7 @@ const CustomersTable = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center">
                         <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

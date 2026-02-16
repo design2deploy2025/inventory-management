@@ -1,29 +1,29 @@
 import React, { useState, useMemo } from 'react'
 import Chart from 'react-apexcharts'
 
-// Sample data for best selling products
+// Sample data for best selling products - Gift items & Handicrafts
 const weeklyBestSellers = [
-  { id: 'PRD-001', name: 'Premium Plan', units: 156, revenue: 46644, growth: 12.5 },
-  { id: 'PRD-003', name: 'Basic Plan', units: 142, revenue: 14058, growth: 8.2 },
-  { id: 'PRD-002', name: 'Enterprise License', units: 89, revenue: 133411, growth: 15.7 },
-  { id: 'PRD-004', name: 'Professional Plan', units: 76, revenue: 45524, growth: 5.3 },
-  { id: 'PRD-005', name: 'Team Plan', units: 54, revenue: 26946, growth: -2.1 },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', units: 156, revenue: 43680, growth: 25.5 },
+  { id: 'PRD-003', name: 'Handmade Candle Set', units: 142, revenue: 63900, growth: 18.2 },
+  { id: 'PRD-002', name: 'Gift Box - Anniversary', units: 89, revenue: 75650, growth: 15.7 },
+  { id: 'PRD-004', name: 'Personalized Mug Set', units: 76, revenue: 26600, growth: 12.3 },
+  { id: 'PRD-005', name: 'Terracotta Decor', units: 54, revenue: 28080, growth: 8.1 },
 ]
 
 const monthlyBestSellers = [
-  { id: 'PRD-002', name: 'Enterprise License', units: 423, revenue: 634077, growth: 22.4 },
-  { id: 'PRD-001', name: 'Premium Plan', units: 612, revenue: 183188, growth: 18.9 },
-  { id: 'PRD-004', name: 'Professional Plan', units: 298, revenue: 178502, growth: 14.2 },
-  { id: 'PRD-003', name: 'Basic Plan', units: 567, revenue: 56133, growth: 9.6 },
-  { id: 'PRD-006', name: 'Starter Pack', units: 234, revenue: 23366, growth: 6.8 },
+  { id: 'PRD-002', name: 'Gift Box - Anniversary', units: 423, revenue: 359550, growth: 32.4 },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', units: 612, revenue: 171360, growth: 28.9 },
+  { id: 'PRD-004', name: 'Handmade Candle Set', units: 298, revenue: 134100, growth: 24.2 },
+  { id: 'PRD-003', name: 'Festival Gift Hamper', units: 567, revenue: 680400, growth: 19.6 },
+  { id: 'PRD-006', name: 'Handloom Table Runner', units: 234, revenue: 152100, growth: 16.8 },
 ]
 
 const fastSellers = [
-  { id: 'PRD-001', name: 'Premium Plan', avgTime: '2.3 hrs', units: 156, velocity: 'Very High' },
-  { id: 'PRD-003', name: 'Basic Plan', avgTime: '3.1 hrs', units: 142, velocity: 'High' },
-  { id: 'PRD-007', name: 'Add-on Feature', avgTime: '4.5 hrs', units: 89, velocity: 'High' },
-  { id: 'PRD-008', name: 'Consultation', avgTime: '5.2 hrs', units: 67, velocity: 'Medium' },
-  { id: 'PRD-002', name: 'Enterprise License', avgTime: '8.7 hrs', units: 54, velocity: 'Medium' },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', avgTime: '2.3 hrs', units: 156, velocity: 'Very High' },
+  { id: 'PRD-003', name: 'Handmade Candle Set', avgTime: '3.1 hrs', units: 142, velocity: 'High' },
+  { id: 'PRD-007', name: 'Personalized Mug', avgTime: '4.5 hrs', units: 89, velocity: 'High' },
+  { id: 'PRD-008', name: 'Gift Box - Small', avgTime: '5.2 hrs', units: 67, velocity: 'Medium' },
+  { id: 'PRD-002', name: 'Terracotta Decor', avgTime: '8.7 hrs', units: 54, velocity: 'Medium' },
 ]
 
 // Sample chart data
@@ -184,9 +184,9 @@ const TopSellingProducts = () => {
 
   // Format currency
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value)
@@ -198,10 +198,10 @@ const TopSellingProducts = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h2 className="text-lg sm:text-xl font-semibold text-white">
-            Top Selling Products
+            Best Selling Products
           </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Best performing products by sales volume
+            Top performing gift items & handicrafts
           </p>
         </div>
 

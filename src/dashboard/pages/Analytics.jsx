@@ -6,61 +6,61 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { FaDownload } from 'react-icons/fa'
 
-// Sample data for PDF generation (same as TimePeriodStats)
+// Sample data for PDF generation (same as TimePeriodStats) - Gift items data
 const timePeriodData = {
   day: {
     label: 'Today',
-    productsSold: 45,
-    revenue: 1250.00,
-    stock: 850,
-    stockValue: 42500.00
+    ordersReceived: 12,
+    revenue: 8560.00,
+    stock: 217,
+    stockValue: 98500.00
   },
   week: {
     label: 'This Week',
-    productsSold: 320,
-    revenue: 8750.50,
-    stock: 780,
-    stockValue: 38900.00
+    ordersReceived: 85,
+    revenue: 62500.50,
+    stock: 195,
+    stockValue: 89200.00
   },
   month: {
     label: 'This Month',
-    productsSold: 1250,
-    revenue: 35420.00,
-    stock: 650,
-    stockValue: 32500.00
+    ordersReceived: 320,
+    revenue: 245680.00,
+    stock: 150,
+    stockValue: 68500.00
   },
   year: {
     label: 'This Year',
-    productsSold: 8750,
-    revenue: 425680.75,
-    stock: 425,
-    stockValue: 21250.00
+    ordersReceived: 2450,
+    revenue: 1850000.00,
+    stock: 120,
+    stockValue: 54000.00
   }
 }
 
-// Sample data for top selling products
+// Sample data for top selling products - Gift items
 const weeklyBestSellers = [
-  { id: 'PRD-001', name: 'Premium Plan', units: 156, revenue: 46644, growth: 12.5 },
-  { id: 'PRD-003', name: 'Basic Plan', units: 142, revenue: 14058, growth: 8.2 },
-  { id: 'PRD-002', name: 'Enterprise License', units: 89, revenue: 133411, growth: 15.7 },
-  { id: 'PRD-004', name: 'Professional Plan', units: 76, revenue: 45524, growth: 5.3 },
-  { id: 'PRD-005', name: 'Team Plan', units: 54, revenue: 26946, growth: -2.1 },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', units: 156, revenue: 43680, growth: 25.5 },
+  { id: 'PRD-003', name: 'Handmade Candle Set', units: 142, revenue: 63900, growth: 18.2 },
+  { id: 'PRD-002', name: 'Gift Box - Anniversary', units: 89, revenue: 75650, growth: 15.7 },
+  { id: 'PRD-004', name: 'Personalized Mug Set', units: 76, revenue: 26600, growth: 12.3 },
+  { id: 'PRD-005', name: 'Terracotta Decor', units: 54, revenue: 28080, growth: 8.1 },
 ]
 
 const monthlyBestSellers = [
-  { id: 'PRD-002', name: 'Enterprise License', units: 423, revenue: 634077, growth: 22.4 },
-  { id: 'PRD-001', name: 'Premium Plan', units: 612, revenue: 183188, growth: 18.9 },
-  { id: 'PRD-004', name: 'Professional Plan', units: 298, revenue: 178502, growth: 14.2 },
-  { id: 'PRD-003', name: 'Basic Plan', units: 567, revenue: 56133, growth: 9.6 },
-  { id: 'PRD-006', name: 'Starter Pack', units: 234, revenue: 23366, growth: 6.8 },
+  { id: 'PRD-002', name: 'Gift Box - Anniversary', units: 423, revenue: 359550, growth: 32.4 },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', units: 612, revenue: 171360, growth: 28.9 },
+  { id: 'PRD-004', name: 'Handmade Candle Set', units: 298, revenue: 134100, growth: 24.2 },
+  { id: 'PRD-003', name: 'Festival Gift Hamper', units: 567, revenue: 680400, growth: 19.6 },
+  { id: 'PRD-006', name: 'Handloom Table Runner', units: 234, revenue: 152100, growth: 16.8 },
 ]
 
 const fastSellers = [
-  { id: 'PRD-001', name: 'Premium Plan', avgTime: '2.3 hrs', units: 156, velocity: 'Very High' },
-  { id: 'PRD-003', name: 'Basic Plan', avgTime: '3.1 hrs', units: 142, velocity: 'High' },
-  { id: 'PRD-007', name: 'Add-on Feature', avgTime: '4.5 hrs', units: 89, velocity: 'High' },
-  { id: 'PRD-008', name: 'Consultation', avgTime: '5.2 hrs', units: 67, velocity: 'Medium' },
-  { id: 'PRD-002', name: 'Enterprise License', avgTime: '8.7 hrs', units: 54, velocity: 'Medium' },
+  { id: 'PRD-001', name: 'Customized Rakhi Set', avgTime: '2.3 hrs', units: 156, velocity: 'Very High' },
+  { id: 'PRD-003', name: 'Handmade Candle Set', avgTime: '3.1 hrs', units: 142, velocity: 'High' },
+  { id: 'PRD-007', name: 'Personalized Mug', avgTime: '4.5 hrs', units: 89, velocity: 'High' },
+  { id: 'PRD-008', name: 'Gift Box - Small', avgTime: '5.2 hrs', units: 67, velocity: 'Medium' },
+  { id: 'PRD-002', name: 'Terracotta Decor', avgTime: '8.7 hrs', units: 54, velocity: 'Medium' },
 ]
 
 const generatePDF = () => {
@@ -74,7 +74,7 @@ const generatePDF = () => {
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(22)
   doc.setFont('helvetica', 'bold')
-  doc.text('Analytics Detailed Report', pageWidth / 2, 20, { align: 'center' })
+  doc.text('Business Analytics Report', pageWidth / 2, 20, { align: 'center' })
   
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
@@ -99,12 +99,12 @@ const generatePDF = () => {
   yPos += 10
   
   // Create time period stats table
-  const timePeriodHeaders = [['Time Period', 'Products Sold', 'Revenue ($)', 'Stock', 'Stock Value ($)']]
+  const timePeriodHeaders = [['Time Period', 'Orders Received', 'Revenue (₹)', 'Stock', 'Stock Value (₹)']]
   const timePeriodData = [
-    ['Today', '45', '1,250.00', '850', '42,500.00'],
-    ['This Week', '320', '8,750.50', '780', '38,900.00'],
-    ['This Month', '1,250', '35,420.00', '650', '32,500.00'],
-    ['This Year', '8,750', '425,680.75', '425', '21,250.00']
+    ['Today', '12', '8,560.00', '217', '98,500.00'],
+    ['This Week', '85', '62,500.50', '195', '89,200.00'],
+    ['This Month', '320', '245,680.00', '150', '68,500.00'],
+    ['This Year', '2,450', '1,850,000.00', '120', '54,000.00']
   ]
   
   autoTable(doc, {
@@ -125,7 +125,7 @@ const generatePDF = () => {
   doc.text('Weekly Best Sellers', 14, yPos)
   yPos += 10
   
-  const weeklyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue ($)', 'Growth (%)']]
+  const weeklyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth (%)']]
   const weeklyBody = weeklyBestSellers.map(p => [
     p.id,
     p.name,
@@ -152,7 +152,7 @@ const generatePDF = () => {
   doc.text('Monthly Best Sellers', 14, yPos)
   yPos += 10
   
-  const monthlyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue ($)', 'Growth (%)']]
+  const monthlyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth (%)']]
   const monthlyBody = monthlyBestSellers.map(p => [
     p.id,
     p.name,
@@ -213,7 +213,7 @@ const generatePDF = () => {
   }
   
   // Save the PDF
-  doc.save('analytics-detailed-report.pdf')
+  doc.save('business-analytics-report.pdf')
 }
 
 const Analytics = () => {

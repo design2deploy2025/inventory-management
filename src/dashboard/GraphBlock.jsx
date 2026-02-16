@@ -5,17 +5,15 @@ const GraphBlock = () => {
   const [chartOptions, setChartOptions] = useState({});
   const [series] = useState([
     {
-      name: "Chosen Period",
+      name: "Orders via WhatsApp",
       data: [
-        23000, 44000, 55000, 57000, 56000, 61000,
-        58000, 63000, 60000, 66000, 34000, 78000,
+        45, 52, 38, 60, 55, 72, 68, 78, 65, 82, 58, 90,
       ],
     },
     {
-      name: "Last Period",
+      name: "Orders via Instagram",
       data: [
-        17000, 76000, 85000, 101000, 98000, 87000,
-        105000, 91000, 114000, 94000, 67000, 66000,
+        30, 48, 55, 62, 58, 65, 72, 68, 75, 70, 55, 78,
       ],
     },
   ]);
@@ -42,11 +40,11 @@ const GraphBlock = () => {
         colors: ["transparent"],
       },
       dataLabels: { enabled: false },
-      legend: { show: false },
+      legend: { show: true, position: 'top', horizontalAlign: 'right', labels: { colors: '#94a3b8' } },
       xaxis: {
         categories: [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December",
+          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ],
         labels: {
           style: {
@@ -61,7 +59,7 @@ const GraphBlock = () => {
       },
       yaxis: {
         labels: {
-          formatter: (val) => (val >= 1000 ? `${val / 1000}k` : val),
+          formatter: (val) => val,
           style: {
             fontSize: "13px",
             fontFamily: "Inter, ui-sans-serif",
@@ -71,12 +69,11 @@ const GraphBlock = () => {
       },
       tooltip: {
         y: {
-          formatter: (val) =>
-            `$${val >= 1000 ? `${val / 1000}k` : val}`,
+          formatter: (val) => `${val} orders`,
         },
         theme: "dark",
       },
-      colors: ["#4f46e5", "#6366f1"], // indigo-600 + indigo-500
+      colors: ["#25D366", "#E1306C"], // WhatsApp green + Instagram pink
       grid: {
         borderColor: "#374151",
       },
@@ -100,6 +97,9 @@ const GraphBlock = () => {
                 style: { fontSize: "11px", color: "#94a3b8" },
               },
             },
+            legend: {
+              show: false
+            }
           },
         },
       ],
@@ -112,10 +112,10 @@ const GraphBlock = () => {
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-sm text-slate-400">
-            Income
+            Orders by Channel
           </h2>
           <p className="text-xl sm:text-2xl font-semibold text-white">
-            $126,238.49
+            WhatsApp & Instagram
           </p>
         </div>
 
@@ -130,7 +130,7 @@ const GraphBlock = () => {
             <path d="M12 5v14" />
             <path d="m19 12-7 7-7-7" />
           </svg>
-          25%
+          18%
         </span>
       </div>
 
@@ -146,3 +146,4 @@ const GraphBlock = () => {
 };
 
 export default GraphBlock;
+

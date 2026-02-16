@@ -1,34 +1,34 @@
 import React, { useState } from 'react'
 
-// Sample data for different time periods
+// Sample data for different time periods - Gift items & Handicrafts
 const timePeriodData = {
   day: {
     label: 'Today',
-    productsSold: 45,
-    revenue: 1250.00,
-    stock: 850,
-    stockValue: 42500.00
+    ordersReceived: 12,
+    revenue: 8560.00,
+    stock: 217,
+    stockValue: 98500.00
   },
   week: {
     label: 'This Week',
-    productsSold: 320,
-    revenue: 8750.50,
-    stock: 780,
-    stockValue: 38900.00
+    ordersReceived: 85,
+    revenue: 62500.50,
+    stock: 195,
+    stockValue: 89200.00
   },
   month: {
     label: 'This Month',
-    productsSold: 1250,
-    revenue: 35420.00,
-    stock: 650,
-    stockValue: 32500.00
+    ordersReceived: 320,
+    revenue: 245680.00,
+    stock: 150,
+    stockValue: 68500.00
   },
   year: {
     label: 'This Year',
-    productsSold: 8750,
-    revenue: 425680.75,
-    stock: 425,
-    stockValue: 21250.00
+    ordersReceived: 2450,
+    revenue: 1850000.00,
+    stock: 120,
+    stockValue: 54000.00
   }
 }
 
@@ -98,14 +98,14 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Products Sold ({currentData.label})
+                  Orders Received ({currentData.label})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
-                  {currentData.productsSold.toLocaleString()}
+                  {currentData.ordersReceived.toLocaleString()}
                 </h3>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-sm text-slate-400">
-                    {currentData.label.toLowerCase()} sales
+                    Via WhatsApp & Instagram
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -129,11 +129,11 @@ const TimePeriodStats = () => {
                   Revenue ({currentData.label})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
-                  ${currentData.revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{currentData.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-sm text-slate-400">
-                    {currentData.label.toLowerCase()} revenue
+                    {currentData.label.toLowerCase()} earnings
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-green-500/10 text-green-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -161,7 +161,7 @@ const TimePeriodStats = () => {
                 </h3>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-sm text-slate-400">
-                    Current stock
+                    Units available
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -182,10 +182,10 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Cost of Stock ({currentData.label})
+                  Stock Value ({currentData.label})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
-                  ${currentData.stockValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{currentData.stockValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-sm text-slate-400">
@@ -193,7 +193,7 @@ const TimePeriodStats = () => {
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
+                      <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0.753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
                     </svg>
                     <span className="inline-block">
                       {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}

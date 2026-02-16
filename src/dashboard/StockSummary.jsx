@@ -1,22 +1,22 @@
 import React from 'react'
 
 const StockSummary = () => {
-  // Mock data for low on stock products
+  // Mock data for low on stock products - Handmade/Limited items
   const lowOnStockProducts = [
-    { id: 1, name: 'Wireless Headphones', stock: 3, threshold: 10 },
-    { id: 2, name: 'USB-C Cable 2m', stock: 5, threshold: 15 },
-    { id: 3, name: 'Laptop Stand', stock: 2, threshold: 8 },
-    { id: 4, name: 'Bluetooth Mouse', stock: 4, threshold: 12 },
-    { id: 5, name: 'Screen Protector', stock: 1, threshold: 20 },
+    { id: 1, name: 'Handmade Scented Candle Set', stock: 3, threshold: 10 },
+    { id: 2, name: 'Handcrafted Wooden Photo Frame', stock: 2, threshold: 8 },
+    { id: 3, name: 'Customized Rakhi Set', stock: 5, threshold: 15 },
+    { id: 4, name: 'Terracotta Home Decor', stock: 4, threshold: 10 },
+    { id: 5, name: 'Handloom Table Runner', stock: 1, threshold: 5 },
   ]
 
-  // Mock data for best selling products
+  // Mock data for best selling products - Gift items
   const bestSellingProducts = [
-    { id: 1, name: 'Smartphone Case Pro', sales: 1245 },
-    { id: 2, name: 'Wireless Charger 15W', sales: 982 },
-    { id: 3, name: 'Mechanical Keyboard', sales: 756 },
-    { id: 4, name: 'Noise Canceling Earbuds', sales: 634 },
-    { id: 5, name: 'HD Webcam 1080p', sales: 521 },
+    { id: 1, name: 'Customized Rakhi Set', sales: 420 },
+    { id: 2, name: 'Handmade Scented Candle Set', sales: 289 },
+    { id: 3, name: 'Festival Gift Hamper', sales: 156 },
+    { id: 4, name: 'Personalized Mug Set', sales: 185 },
+    { id: 5, name: 'Gift Box - Anniversary', sales: 156 },
   ]
 
   return (
@@ -106,7 +106,7 @@ const StockSummary = () => {
                   <span className="text-sm text-white font-medium">{product.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Sales:</span>
+                  <span className="text-xs text-slate-400">Orders:</span>
                   <span className="text-sm font-semibold text-emerald-400">{product.sales.toLocaleString()}</span>
                 </div>
               </div>
