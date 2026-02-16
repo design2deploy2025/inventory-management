@@ -187,16 +187,16 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
 
                 {/* Price and Quantity */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">
                       Price *
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
                       <input
                         type="number"
                         name="price"
-                        value={formData.price.replace('$', '')}
+                        value={formData.price.replace(/[₹$]/g, '')}
                         onChange={handleChange}
                         placeholder="0.00"
                         className="block w-full pl-8 pr-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
@@ -323,8 +323,8 @@ const ProductModal = ({ isOpen, onClose, product, onSave }) => {
                       <span className="text-slate-400">Stock Value:</span>
                       <span className="text-white">
                         {formData.price && formData.quantity
-                          ? `$${(parseFloat(formData.price.replace('$', '')) * parseInt(formData.quantity)).toFixed(2)}`
-                          : '$0.00'}
+                          ? `₹${(parseFloat(formData.price.replace(/[₹$]/g, '')) * parseInt(formData.quantity)).toFixed(2)}`
+                          : '₹0.00'}
                       </span>
                     </div>
                   </div>
