@@ -1,41 +1,171 @@
-import React, { useState } from 'react'
-
-// Sample data for different time periods - Gift items & Handicrafts
-const timePeriodData = {
-  day: {
-    label: 'Today',
-    ordersReceived: 12,
-    revenue: 8560.00,
-    stock: 217,
-    stockValue: 98500.00
-  },
-  week: {
-    label: 'This Week',
-    ordersReceived: 85,
-    revenue: 62500.50,
-    stock: 195,
-    stockValue: 89200.00
-  },
-  month: {
-    label: 'This Month',
-    ordersReceived: 320,
-    revenue: 245680.00,
-    stock: 150,
-    stockValue: 68500.00
-  },
-  year: {
-    label: 'This Year',
-    ordersReceived: 2450,
-    revenue: 1850000.00,
-    stock: 120,
-    stockValue: 54000.00
-  }
-}
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const TimePeriodStats = () => {
+  const { user } = useAuth()
   const [timePeriod, setTimePeriod] = useState('month')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    day: { ordersReceived: 0, revenue: 0, stock: 0, stockValue: 0 },
+    week: { ordersReceived: 0, revenue: 0, stock: 0, stockValue: 0 },
+    month: { ordersReceived: 0, revenue: 0, stock: 0, stockValue: 0 },
+    year: { ordersReceived: 0, revenue: 0, stock: 0, stockValue: 0 }
+  })
 
-  const currentData = timePeriodData[timePeriod]
+  // Fetch stats from Supabase
+  const fetchStats = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Get current date info
+      const now = new Date()
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const yearStart = new Date(now.getFullYear(), 0, 1).toISOString()
+      
+      // Fetch all orders for the user
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('total_price, payment_status, created_at')
+        .eq('user_id', user.id)
+        .eq('payment_status', 'Paid') // Only count paid orders for revenue
+      
+      if (ordersError) throw ordersError
+      
+      // Fetch all products for the user
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('quantity, price')
+        .eq('user_id', user.id)
+      
+      if (productsError) throw productsError
+      
+      // Calculate total stock and stock value
+      const totalStock = products?.reduce((sum, p) => sum + (p.quantity || 0), 0) || 0
+      const totalStockValue = products?.reduce((sum, p) => sum + ((p.price || 0) * (p.quantity || 0)), 0) || 0
+      
+      // Fetch orders for counting (all orders, not just paid)
+      const { data: allOrders, error: allOrdersError } = await supabase
+        .from('orders')
+        .select('total_price, payment_status, created_at')
+        .eq('user_id', user.id)
+      
+      if (allOrdersError) throw allOrdersError
+      
+      // Calculate stats for each time period
+      const calculateStats = (startDate) => {
+        const periodOrders = allOrders?.filter(o => new Date(o.created_at) >= new Date(startDate)) || []
+        const periodRevenue = orders?.filter(o => new Date(o.created_at) >= new Date(startDate))
+          .reduce((sum, o) => sum + (o.total_price || 0), 0) || 0
+        
+        return {
+          ordersReceived: periodOrders.length,
+          revenue: periodRevenue,
+          stock: totalStock,
+          stockValue: totalStockValue
+        }
+      }
+      
+      setStats({
+        day: calculateStats(todayStart),
+        week: calculateStats(weekStart),
+        month: calculateStats(monthStart),
+        year: calculateStats(yearStart)
+      })
+    } catch (error) {
+      console.error('Error fetching stats:', error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch stats when user changes
+  useEffect(() => {
+    if (user) {
+      fetchStats()
+    }
+  }, [user])
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('analytics-stats-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchStats()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  const currentData = stats[timePeriod]
+  const timePeriodLabels = {
+    day: 'Today',
+    week: 'This Week',
+    month: 'This Month',
+    year: 'This Year'
+  }
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div>
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <div className="h-9 w-16 bg-gray-800 rounded-s-lg animate-pulse"></div>
+            <div className="h-9 w-16 bg-gray-800 animate-pulse"></div>
+            <div className="h-9 w-16 bg-gray-800 animate-pulse"></div>
+            <div className="h-9 w-16 bg-gray-800 rounded-e-lg animate-pulse"></div>
+          </div>
+        </div>
+        <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+          <div className="grid md:grid-cols-4 bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="block p-4 md:p-5 relative bg-[#0A0A0A] animate-pulse">
+                <div className="flex md:flex flex-col lg:flex-row gap-y-3 gap-x-5">
+                  <div className="shrink-0 size-5 bg-gray-800 rounded"></div>
+                  <div className="grow">
+                    <div className="h-3 bg-gray-800 rounded w-32 mb-2"></div>
+                    <div className="h-6 bg-gray-800 rounded w-24 mb-2"></div>
+                    <div className="h-2 bg-gray-800 rounded w-40"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -89,7 +219,7 @@ const TimePeriodStats = () => {
         </div>
       </div>
 
-      {/* Time Period Stats Cards - Same layout as StatCards */}
+      {/* Time Period Stats Cards */}
       <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
         <div className="grid md:grid-cols-4 bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
           <a className="block p-4 md:p-5 relative bg-[#0A0A0A] hover:bg-gray-900 focus:outline-hidden focus:bg-gray-900 before:absolute before:top-0 before:start-0 before:w-full before:h-px md:before:h-full before:border-s before:border-gray-800 first:before:bg-transparent transition-colors duration-300" href="#">
@@ -98,7 +228,7 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Orders Received ({currentData.label})
+                  Orders Received ({timePeriodLabels[timePeriod]})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
                   {currentData.ordersReceived.toLocaleString()}
@@ -112,7 +242,7 @@ const TimePeriodStats = () => {
                       <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
                     </svg>
                     <span className="inline-block">
-                      {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}
+                      {timePeriodLabels[timePeriod]}
                     </span>
                   </span>
                 </div>
@@ -126,21 +256,21 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Revenue ({currentData.label})
+                  Revenue ({timePeriodLabels[timePeriod]})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
                   ₹{currentData.revenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h3>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-sm text-slate-400">
-                    {currentData.label.toLowerCase()} earnings
+                    {timePeriodLabels[timePeriod].toLowerCase()} earnings
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-green-500/10 text-green-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                       <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
                     </svg>
                     <span className="inline-block">
-                      {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}
+                      {timePeriodLabels[timePeriod]}
                     </span>
                   </span>
                 </div>
@@ -154,7 +284,7 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Stock in Inventory ({currentData.label})
+                  Stock in Inventory ({timePeriodLabels[timePeriod]})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
                   {currentData.stock.toLocaleString()}
@@ -168,7 +298,7 @@ const TimePeriodStats = () => {
                       <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
                     </svg>
                     <span className="inline-block">
-                      {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}
+                      {timePeriodLabels[timePeriod]}
                     </span>
                   </span>
                 </div>
@@ -182,7 +312,7 @@ const TimePeriodStats = () => {
 
               <div className="grow">
                 <p className="text-xs uppercase font-medium text-slate-400">
-                  Stock Value ({currentData.label})
+                  Stock Value ({timePeriodLabels[timePeriod]})
                 </p>
                 <h3 className="mt-1 text-xl sm:text-2xl font-semibold text-white">
                   ₹{currentData.stockValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -193,10 +323,10 @@ const TimePeriodStats = () => {
                   </p>
                   <span className="ms-1 inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-amber-500/10 text-amber-400">
                     <svg className="inline-block size-3 self-center" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                      <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0.753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
+                      <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
                     </svg>
                     <span className="inline-block">
-                      {timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}
+                      {timePeriodLabels[timePeriod]}
                     </span>
                   </span>
                 </div>
