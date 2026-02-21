@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 // Sample products data (fallback if no products in DB)
@@ -25,6 +25,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     customerPhone: '',
     customerWhatsApp: '',
     customerInstagram: '',
+    customerEmail: '',
+    customerAddress: '',
     paymentType: 'Cash',
     paymentStatus: 'Unpaid',
     orderStatus: 'Pending',
@@ -32,6 +34,12 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     notes: '',
     source: 'WhatsApp',
   })
+
+  // Customer search dropdown state
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null)
+  const customerDropdownRef = useRef(null)
 
   const [nextOrderNumber, setNextOrderNumber] = useState(1)
 
@@ -76,7 +84,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       setLoadingCustomers(true)
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, phone, whatsapp, instagram')
+        .select('id, name, phone, whatsapp, instagram, insta, email, address')
         .eq('user_id', user.id)
         .order('name', { ascending: true })
 
@@ -88,6 +96,29 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       setLoadingCustomers(false)
     }
   }
+
+  // Filtered customers for dropdown search
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearchQuery.trim()) return customers // Show all customers when no search query
+    const query = customerSearchQuery.toLowerCase()
+    return customers.filter(customer => 
+      customer.name?.toLowerCase().includes(query) ||
+      customer.phone?.includes(query) ||
+      customer.whatsapp?.includes(query) ||
+      customer.insta?.toLowerCase().includes(query)
+    ) // Show all matching results (no limit)
+  }, [customers, customerSearchQuery])
+
+  // Click outside handler for customer dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
+        setShowCustomerDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Fetch products and customers when modal opens
   useEffect(() => {
@@ -108,6 +139,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           customerPhone: orderToEdit.customerPhone || '',
           customerWhatsApp: orderToEdit.customerWhatsApp || '',
           customerInstagram: orderToEdit.customerInstagram || '',
+          customerEmail: '',
+          customerAddress: '',
           paymentType: orderToEdit.paymentType || 'Cash',
           paymentStatus: orderToEdit.paymentStatus || 'Unpaid',
           orderStatus: orderToEdit.orderStatus || 'Pending',
@@ -115,6 +148,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           notes: orderToEdit.notes || '',
           source: orderToEdit.source || 'WhatsApp',
         })
+        setCustomerSearchQuery(orderToEdit.customerName || '')
       } else {
         // Create mode: generate new order ID
         const orderNumber = Math.floor(Math.random() * 900) + 100
@@ -125,6 +159,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           customerPhone: '',
           customerWhatsApp: '',
           customerInstagram: '',
+          customerEmail: '',
+          customerAddress: '',
           paymentType: 'Cash',
           paymentStatus: 'Unpaid',
           orderStatus: 'Pending',
@@ -132,33 +168,67 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           notes: '',
           source: 'WhatsApp',
         })
+        setCustomerSearchQuery('')
+        setSelectedCustomerId(null)
       }
     }
   }, [isOpen, isEditMode, orderToEdit])
 
-  // Handle customer selection
+  // Handle customer search input
+  const handleCustomerSearch = (e) => {
+    const value = e.target.value
+    setCustomerSearchQuery(value)
+    setFormData((prev) => ({
+      ...prev,
+      customerName: value,
+    }))
+    setSelectedCustomerId(null)
+    setShowCustomerDropdown(true)
+  }
+
+  // Handle selecting a customer from dropdown
+  const handleSelectCustomer = (customer) => {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: customer.name || '',
+      customerPhone: customer.phone || '',
+      customerWhatsApp: customer.whatsapp || customer.phone || '',
+      customerInstagram: customer.instagram || customer.insta || '',
+      customerEmail: customer.email || '',
+      customerAddress: customer.address || '',
+    }))
+    setCustomerSearchQuery(customer.name || '')
+    setSelectedCustomerId(customer.id)
+    setShowCustomerDropdown(false)
+  }
+
+  // Clear customer selection
+  const handleClearCustomer = () => {
+    setFormData((prev) => ({
+      ...prev,
+      customerName: '',
+      customerPhone: '',
+      customerWhatsApp: '',
+      customerInstagram: '',
+      customerEmail: '',
+      customerAddress: '',
+    }))
+    setCustomerSearchQuery('')
+    setSelectedCustomerId(null)
+    setShowCustomerDropdown(false)
+  }
+
+  // Handle customer selection (legacy - from dropdown)
   const handleCustomerSelect = (e) => {
     const customerId = e.target.value
     if (!customerId) {
-      setFormData((prev) => ({
-        ...prev,
-        customerName: '',
-        customerPhone: '',
-        customerWhatsApp: '',
-        customerInstagram: '',
-      }))
+      handleClearCustomer()
       return
     }
 
     const customer = customers.find(c => c.id === customerId)
     if (customer) {
-      setFormData((prev) => ({
-        ...prev,
-        customerName: customer.name || '',
-        customerPhone: customer.phone || '',
-        customerWhatsApp: customer.whatsapp || '',
-        customerInstagram: customer.instagram || '',
-      }))
+      handleSelectCustomer(customer)
     }
   }
 
@@ -226,14 +296,164 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     }, 0)
   }
 
+  // Check if customer with similar details already exists
+  const checkExistingCustomer = async (customerData) => {
+    if (!user) return { exists: false, customer: null }
+    
+    try {
+      // Build query to find existing customer
+      let query = supabase
+        .from('customers')
+        .select('id, name, phone, whatsapp, instagram, insta, email, address')
+        .eq('user_id', user.id)
+        .limit(1)
+
+      // Check by phone if provided
+      if (customerData.phone) {
+        const { data: phoneData } = await supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('phone', customerData.phone)
+          .limit(1)
+        
+        if (phoneData && phoneData.length > 0) {
+          return { exists: true, customer: phoneData[0], field: 'phone' }
+        }
+      }
+
+      // Check by whatsapp if provided
+      if (customerData.whatsapp) {
+        const { data: whatsappData } = await supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('whatsapp', customerData.whatsapp)
+          .limit(1)
+        
+        if (whatsappData && whatsappData.length > 0) {
+          return { exists: true, customer: whatsappData[0], field: 'whatsapp' }
+        }
+      }
+
+      // Check by instagram/insta if provided
+      if (customerData.instagram) {
+        const { data: instaData } = await supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('instagram', customerData.instagram.toLowerCase())
+          .limit(1)
+        
+        if (instaData && instaData.length > 0) {
+          return { exists: true, customer: instaData[0], field: 'instagram' }
+        }
+      }
+
+      // Check by email if provided
+      if (customerData.email) {
+        const { data: emailData } = await supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('email', customerData.email.toLowerCase())
+          .limit(1)
+        
+        if (emailData && emailData.length > 0) {
+          return { exists: true, customer: emailData[0], field: 'email' }
+        }
+      }
+
+      return { exists: false, customer: null, field: null }
+    } catch (err) {
+      console.error('Error checking existing customer:', err.message)
+      return { exists: false, customer: null, field: null }
+    }
+  }
+
   // Handle save/create
-  const handleSave = () => {
+  const handleSave = async () => {
+    let customerId = selectedCustomerId
+
+    // If it's a new customer (not selected from dropdown), check for duplicates and save
+    if (!customerId && formData.customerName) {
+      // Prepare customer data for checking
+      const customerData = {
+        name: formData.customerName,
+        phone: formData.customerPhone || null,
+        whatsapp: formData.customerWhatsApp || formData.customerPhone || null,
+        instagram: formData.customerInstagram || null,
+        email: formData.customerEmail || null,
+      }
+
+      // Check if customer with similar details already exists
+      const existingCheck = await checkExistingCustomer(customerData)
+      
+      if (existingCheck.exists) {
+        const existing = existingCheck.customer
+        const fieldName = existingCheck.field
+        
+        // Show confirmation dialog
+        const useExisting = window.confirm(
+          `A customer with the same ${fieldName} already exists:\n\n` +
+          `Name: ${existing.name}\n` +
+          `Phone: ${existing.phone || 'N/A'}\n` +
+          `Instagram: ${existing.instagram || existing.insta || 'N/A'}\n` +
+          `Email: ${existing.email || 'N/A'}\n\n` +
+          `Do you want to use this existing customer instead?`
+        )
+        
+        if (useExisting) {
+          // Use existing customer
+          customerId = existing.id
+          handleSelectCustomer(existing)
+          return // Exit the function, customer is already selected
+        } else {
+          // User chose to create new anyway - continue with creation
+          // Add a note that duplicate check was bypassed
+          console.log('User chose to create new customer despite duplicate')
+        }
+      }
+
+      // Save new customer to database
+      try {
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            user_id: user.id,
+            name: formData.customerName,
+            phone: formData.customerPhone || null,
+            whatsapp: formData.customerWhatsApp || formData.customerPhone || null,
+            instagram: formData.customerInstagram || null,
+            insta: formData.customerInstagram || null,
+            email: formData.customerEmail || null,
+            address: formData.customerAddress || null,
+          })
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .single()
+
+        if (customerError) throw customerError
+        if (newCustomer) {
+          customerId = newCustomer.id
+          // Update local customers state with the new customer
+          setCustomers(prev => [...prev, newCustomer])
+        }
+      } catch (err) {
+        console.error('Error saving customer:', err.message)
+        alert('Failed to create customer: ' + err.message)
+        return // Don't proceed with order creation if customer save fails
+      }
+    }
+
     const orderData = {
       id: formData.orderId,
+      customerId: customerId, // Include customer ID if available
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
       customerWhatsApp: formData.customerWhatsApp,
       customerInstagram: formData.customerInstagram,
+      customerEmail: formData.customerEmail,
+      customerAddress: formData.customerAddress,
       paymentType: formData.paymentType,
       paymentStatus: formData.paymentStatus,
       orderStatus: formData.orderStatus,
@@ -265,6 +485,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       customerPhone: '',
       customerWhatsApp: '',
       customerInstagram: '',
+      customerEmail: '',
+      customerAddress: '',
       paymentType: 'Cash',
       paymentStatus: 'Unpaid',
       orderStatus: 'Pending',
@@ -272,6 +494,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       notes: '',
       source: 'WhatsApp',
     })
+    setCustomerSearchQuery('')
+    setSelectedCustomerId(null)
   }
 
   // Don't render if not open
@@ -409,22 +633,111 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     Customer Details
+                    {selectedCustomerId && (
+                      <span className="ml-auto text-xs text-emerald-400 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        Existing Customer
+                      </span>
+                    )}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Customer Name */}
-                    <div>
+                    {/* Customer Name with Search Dropdown */}
+                    <div className="relative" ref={customerDropdownRef}>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         Customer Name *
                       </label>
-                      <input
-                        type="text"
-                        name="customerName"
-                        value={formData.customerName}
-                        onChange={handleChange}
-                        placeholder="Enter customer name"
-                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                      />
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          name="customerSearch"
+                          value={customerSearchQuery}
+                          onChange={handleCustomerSearch}
+                          onFocus={() => setShowCustomerDropdown(true)}
+                          placeholder="Search or enter customer name..."
+                          autoComplete="off"
+                          className="block w-full pl-10 pr-10 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                        />
+                        {(customerSearchQuery || selectedCustomerId) && (
+                          <button
+                            type="button"
+                            onClick={handleClearCustomer}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          >
+                            <svg className="h-4 w-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Customer Dropdown */}
+                      {showCustomerDropdown && (
+                        <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-80 overflow-auto">
+                          {loadingCustomers ? (
+                            <div className="px-4 py-3 text-sm text-slate-400">Loading customers...</div>
+                          ) : filteredCustomers.length > 0 ? (
+                            <>
+                              {!selectedCustomerId && customerSearchQuery && (
+                                <div 
+                                  className="px-4 py-3 text-sm text-indigo-400 border-b border-gray-700 cursor-pointer hover:bg-gray-700 flex items-center gap-2"
+                                  onClick={() => {
+                                    // This will create a new customer with the entered name
+                                    setShowCustomerDropdown(false)
+                                  }}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Add new customer: <span className="font-medium">{customerSearchQuery}</span>
+                                </div>
+                              )}
+                              {filteredCustomers.map((customer) => (
+                                <div
+                                  key={customer.id}
+                                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-b-0"
+                                  onClick={() => handleSelectCustomer(customer)}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-white">{customer.name}</p>
+                                      <p className="text-xs text-slate-400">
+                                        {customer.phone || customer.whatsapp ? `+91 ${(customer.phone || customer.whatsapp)?.slice(-10)}` : ''}
+                                        {customer.phone && customer.whatsapp ? ' • ' : ''}
+                                        {customer.insta || customer.instagram ? `@${customer.insta || customer.instagram}` : ''}
+                                      </p>
+                                    </div>
+                                    {customer.id === selectedCustomerId && (
+                                      <svg className="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </>
+                          ) : customerSearchQuery ? (
+                            <div 
+                              className="px-4 py-3 text-sm text-indigo-400 cursor-pointer hover:bg-gray-700 flex items-center gap-2"
+                              onClick={() => setShowCustomerDropdown(false)}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                              </svg>
+                              Add new customer: <span className="font-medium">{customerSearchQuery}</span>
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-slate-400">No customers found</div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Phone */}
@@ -442,8 +755,38 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                       />
                     </div>
 
+                    {/* WhatsApp */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        WhatsApp Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="customerWhatsApp"
+                        value={formData.customerWhatsApp}
+                        onChange={handleChange}
+                        placeholder="+91 XXXXX XXXXX"
+                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                      />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        name="customerEmail"
+                        value={formData.customerEmail}
+                        onChange={handleChange}
+                        placeholder="customer@example.com"
+                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                      />
+                    </div>
+
                     {/* Instagram */}
-                    <div className="md:col-span-2">
+                    <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         Instagram Handle
                       </label>
@@ -458,6 +801,21 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                           className="block w-full pl-8 pr-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                         />
                       </div>
+                    </div>
+
+                    {/* Address */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        Address
+                      </label>
+                      <textarea
+                        name="customerAddress"
+                        value={formData.customerAddress}
+                        onChange={handleChange}
+                        placeholder="Enter customer address..."
+                        rows={2}
+                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-sm"
+                      />
                     </div>
                   </div>
                 </div>

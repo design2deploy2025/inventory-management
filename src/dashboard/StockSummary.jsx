@@ -1,23 +1,165 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 const StockSummary = () => {
-  // Mock data for low on stock products - Handmade/Limited items
-  const lowOnStockProducts = [
-    { id: 1, name: 'Handmade Scented Candle Set', stock: 3, threshold: 10 },
-    { id: 2, name: 'Handcrafted Wooden Photo Frame', stock: 2, threshold: 8 },
-    { id: 3, name: 'Customized Rakhi Set', stock: 5, threshold: 15 },
-    { id: 4, name: 'Terracotta Home Decor', stock: 4, threshold: 10 },
-    { id: 5, name: 'Handloom Table Runner', stock: 1, threshold: 5 },
-  ]
+  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [lowOnStockProducts, setLowOnStockProducts] = useState([])
+  const [bestSellingProducts, setBestSellingProducts] = useState([])
 
-  // Mock data for best selling products - Gift items
-  const bestSellingProducts = [
-    { id: 1, name: 'Customized Rakhi Set', sales: 420 },
-    { id: 2, name: 'Handmade Scented Candle Set', sales: 289 },
-    { id: 3, name: 'Festival Gift Hamper', sales: 156 },
-    { id: 4, name: 'Personalized Mug Set', sales: 185 },
-    { id: 5, name: 'Gift Box - Anniversary', sales: 156 },
-  ]
+  // Threshold for low stock warning
+  const LOW_STOCK_THRESHOLD = 10
+
+  // Fetch data from Supabase
+  const fetchData = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Fetch low stock products (quantity < threshold)
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('id, name, quantity')
+        .eq('user_id', user.id)
+        .lt('quantity', LOW_STOCK_THRESHOLD)
+        .order('quantity', { ascending: true })
+        .limit(5)
+
+      if (productsError) throw productsError
+
+      // Fetch best selling products based on total_sold
+      const { data: bestSellersData, error: bestSellersError } = await supabase
+        .from('products')
+        .select('id, name, total_sold')
+        .eq('user_id', user.id)
+        .gt('total_sold', 0)
+        .order('total_sold', { ascending: false })
+        .limit(5)
+
+      if (bestSellersError) throw bestSellersError
+
+      // Format low stock products
+      const formattedLowStock = (productsData || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        stock: product.quantity,
+        threshold: LOW_STOCK_THRESHOLD
+      }))
+
+      // Format best selling products
+      const formattedBestSellers = (bestSellersData || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        sales: product.total_sold || 0
+      }))
+
+      setLowOnStockProducts(formattedLowStock)
+      setBestSellingProducts(formattedBestSellers)
+    } catch (error) {
+      console.error('Error fetching stock summary:', error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch data when user changes
+  useEffect(() => {
+    if (user) {
+      fetchData()
+    }
+  }, [user])
+
+  // Set up real-time subscription
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('stock-summary-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'products',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchData()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="mt-6">
+        <div className="flex flex-col md:flex-row gap-5">
+          {/* Low on Stock Skeleton */}
+          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-5 h-5 bg-gray-800 rounded animate-pulse"></div>
+              <div className="h-5 w-24 bg-gray-800 rounded animate-pulse"></div>
+              <div className="ml-auto h-6 w-16 bg-gray-800 rounded-md animate-pulse"></div>
+            </div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-gray-800 rounded-full animate-pulse"></div>
+                    <div className="h-4 w-32 bg-gray-800 rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-4 w-16 bg-gray-800 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Best Selling Skeleton */}
+          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-5 h-5 bg-gray-800 rounded animate-pulse"></div>
+              <div className="h-5 w-28 bg-gray-800 rounded animate-pulse"></div>
+              <div className="ml-auto h-6 w-14 bg-gray-800 rounded-md animate-pulse"></div>
+            </div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-gray-800 rounded-full animate-pulse"></div>
+                    <div className="h-4 w-36 bg-gray-800 rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-4 w-14 bg-gray-800 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Empty states
+  const hasLowStock = lowOnStockProducts.length > 0
+  const hasBestSellers = bestSellingProducts.length > 0
 
   return (
     <div className="mt-6">
@@ -48,24 +190,33 @@ const StockSummary = () => {
           </div>
           
           <div className="space-y-3">
-            {lowOnStockProducts.map((product, index) => (
-              <div 
-                key={product.id} 
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full bg-red-500/20 text-red-400">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm text-white font-medium">{product.name}</span>
+            {hasLowStock ? (
+              lowOnStockProducts.map((product, index) => (
+                <div 
+                  key={product.id} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full bg-red-500/20 text-red-400">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm text-white font-medium">{product.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Stock:</span>
+                    <span className="text-sm font-semibold text-red-400">{product.stock}</span>
+                    <span className="text-xs text-slate-500">/ {product.threshold}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Stock:</span>
-                  <span className="text-sm font-semibold text-red-400">{product.stock}</span>
-                  <span className="text-xs text-slate-500">/ {product.threshold}</span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <svg className="w-12 h-12 mx-auto mb-3 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-sm">All products are well stocked!</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -89,28 +240,37 @@ const StockSummary = () => {
             </svg>
             <h2 className="text-lg font-semibold text-white">Best Selling</h2>
             <span className="ml-auto py-1 px-2 text-xs font-medium rounded-md bg-emerald-500/10 text-emerald-400">
-              Top 5
+              Top {bestSellingProducts.length}
             </span>
           </div>
           
           <div className="space-y-3">
-            {bestSellingProducts.map((product, index) => (
-              <div 
-                key={product.id} 
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors duration-200"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400">
-                    {index + 1}
-                  </span>
-                  <span className="text-sm text-white font-medium">{product.name}</span>
+            {hasBestSellers ? (
+              bestSellingProducts.map((product, index) => (
+                <div 
+                  key={product.id} 
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900 transition-colors duration-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400">
+                      {index + 1}
+                    </span>
+                    <span className="text-sm text-white font-medium">{product.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Orders:</span>
+                    <span className="text-sm font-semibold text-emerald-400">{product.sales.toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Orders:</span>
-                  <span className="text-sm font-semibold text-emerald-400">{product.sales.toLocaleString()}</span>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <svg className="w-12 h-12 mx-auto mb-3 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                <p className="text-sm">No sales data yet</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

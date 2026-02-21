@@ -559,6 +559,7 @@ const CustomersTable = () => {
         onSave={handleSaveCustomer}
         onUpdate={handleUpdateCustomer}
         customerToEdit={customerToEdit}
+        user={user}
       />
     </div>
   )

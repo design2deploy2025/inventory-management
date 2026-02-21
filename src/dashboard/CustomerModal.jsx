@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
-const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit }) => {
+const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit, user }) => {
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -57,9 +58,127 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit }) =>
     }))
   }
 
+  // Check if customer with similar details already exists
+  const checkExistingCustomer = async (customerData, excludeId = null) => {
+    if (!user) return { exists: false, customer: null, field: null }
+    
+    try {
+      // Check by phone if provided
+      if (customerData.phone) {
+        let query = supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('phone', customerData.phone)
+        
+        if (excludeId) {
+          query = query.neq('id', excludeId)
+        }
+        
+        const { data: phoneData } = await query.limit(1)
+        
+        if (phoneData && phoneData.length > 0) {
+          return { exists: true, customer: phoneData[0], field: 'phone' }
+        }
+      }
+
+      // Check by instagram/insta if provided
+      if (customerData.insta) {
+        let query = supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('instagram', customerData.insta.toLowerCase())
+        
+        if (excludeId) {
+          query = query.neq('id', excludeId)
+        }
+        
+        const { data: instaData } = await query.limit(1)
+        
+        if (instaData && instaData.length > 0) {
+          return { exists: true, customer: instaData[0], field: 'instagram' }
+        }
+      }
+
+      // Check by email if provided
+      if (customerData.email) {
+        let query = supabase
+          .from('customers')
+          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('email', customerData.email.toLowerCase())
+        
+        if (excludeId) {
+          query = query.neq('id', excludeId)
+        }
+        
+        const { data: emailData } = await query.limit(1)
+        
+        if (emailData && emailData.length > 0) {
+          return { exists: true, customer: emailData[0], field: 'email' }
+        }
+      }
+
+      return { exists: false, customer: null, field: null }
+    } catch (err) {
+      console.error('Error checking existing customer:', err.message)
+      return { exists: false, customer: null, field: null }
+    }
+  }
+
   // Handle save/create
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Prepare customer data for checking
     const customerData = {
+      name: formData.name,
+      phone: formData.phone || null,
+      insta: formData.insta || null,
+      email: formData.email || null,
+    }
+
+    // Check for duplicates (only for new customers or if details changed)
+    if (!isEditMode) {
+      const existingCheck = await checkExistingCustomer(customerData)
+      
+      if (existingCheck.exists) {
+        const existing = existingCheck.customer
+        const fieldName = existingCheck.field
+        
+        // Show confirmation dialog
+        const useExisting = window.confirm(
+          `A customer with the same ${fieldName} already exists:\n\n` +
+          `Name: ${existing.name}\n` +
+          `Phone: ${existing.phone || 'N/A'}\n` +
+          `Instagram: ${existing.insta || 'N/A'}\n` +
+          `Email: ${existing.email || 'N/A'}\n\n` +
+          `Do you want to use this existing customer instead?`
+        )
+        
+        if (useExisting) {
+          // Close this modal and let user know
+          onClose()
+          return
+        } else {
+          // User chose to create new anyway - continue
+          console.log('User chose to create new customer despite duplicate')
+        }
+      }
+    } else if (formData.phone || formData.insta || formData.email) {
+      // For edit mode, check if details changed and if new details conflict
+      const existingCheck = await checkExistingCustomer(customerData, formData.id)
+      
+      if (existingCheck.exists) {
+        const existing = existingCheck.customer
+        const fieldName = existingCheck.field
+        
+        alert(`A customer with the same ${fieldName} already exists. Please use a different ${fieldName}.`)
+        return // Don't proceed with save
+      }
+    }
+    
+    // Prepare customer data for saving
+    const customerSaveData = {
       id: formData.id,
       customerId: formData.customerId,
       name: formData.name,
@@ -73,11 +192,11 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit }) =>
     
     if (isEditMode) {
       if (onUpdate) {
-        onUpdate(customerData)
+        onUpdate(customerSaveData)
       }
     } else {
       if (onSave) {
-        onSave(customerData)
+        onSave(customerSaveData)
       }
     }
     onClose()
