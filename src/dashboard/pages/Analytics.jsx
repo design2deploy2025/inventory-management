@@ -205,12 +205,12 @@ const Analytics = () => {
     // Header text
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(24)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('times', 'bold')
     doc.text('Business Analytics Report', pageWidth / 2, 22, { align: 'center' })
     
     doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    const dateStr = now.toLocaleDateString('en-US', { 
+    doc.setFont('times', 'normal')
+    const dateStr = now.toLocaleDateString('en-US', {
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
@@ -224,38 +224,9 @@ const Analytics = () => {
     
     let yPos = 58
     
-    // Executive Summary Section
-    doc.setFillColor(...lightGray)
-    doc.roundedRect(14, yPos - 5, pageWidth - 28, 30, 3, 3, 'F')
-    
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Executive Summary', 20, yPos + 3)
-    
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    
-    const totalOrders = reportData.timePeriod.year.ordersReceived || 0
-    const totalRevenue = reportData.timePeriod.year.revenue || 0
-    const totalStock = reportData.timePeriod.year.stock || 0
-    const topProduct = reportData.monthlyBestSellers[0]?.name || 'N/A'
-    
-    const summaryText = [
-      `Total Orders (Year): ${totalOrders.toLocaleString()}`,
-      `Total Revenue (Year): ₹${totalRevenue.toLocaleString()}`,
-      `Total Stock: ${totalStock.toLocaleString()} units`,
-      `Top Product: ${topProduct}`
-    ]
-    
-    summaryText.forEach((text, index) => {
-      doc.text(text, 20, yPos + 12 + (index * 6))
-    })
-    
-    yPos = 95
-    
     // Time Period Stats Section
     doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('times', 'bold')
     doc.text('Time Period Statistics', 14, yPos)
     yPos += 8
     
@@ -310,7 +281,7 @@ const Analytics = () => {
     
     // Weekly Best Sellers Section
     doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('times', 'bold')
     doc.text('Weekly Best Sellers', 14, yPos)
     yPos += 8
     
@@ -353,7 +324,7 @@ const Analytics = () => {
     
     // Monthly Best Sellers Section
     doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('times', 'bold')
     doc.text('Monthly Best Sellers', 14, yPos)
     yPos += 8
     
@@ -396,7 +367,7 @@ const Analytics = () => {
     
     // Fast Selling Products Section
     doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
+    doc.setFont('times', 'bold')
     doc.text('Fast Selling Products (Velocity)', 14, yPos)
     yPos += 8
     
