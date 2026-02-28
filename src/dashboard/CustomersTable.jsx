@@ -42,7 +42,8 @@ const CustomersTable = () => {
         name: customer.name || '',
         phone: customer.phone || '',
         whatsapp: customer.phone || '',
-        insta: customer.insta || '',
+        insta: customer.insta || customer.instagram || '',
+        instagram: customer.instagram || customer.insta || '',
         email: customer.email || '',
         address: customer.address || '',
         notes: customer.notes || '',
@@ -50,7 +51,7 @@ const CustomersTable = () => {
         lifetimeValue: customer.lifetime_value || 0,
         repeatOrders: customer.repeat_orders || 0,
         lastOrderDetails: customer.last_order_details || 'No orders yet',
-        source: customer.instagram ? 'Instagram' : 'WhatsApp',
+        source: customer.instagram || customer.insta ? 'Instagram' : 'WhatsApp',
         created_at: customer.created_at,
         updated_at: customer.updated_at
       })) || []
@@ -181,36 +182,46 @@ const CustomersTable = () => {
 
   // Handle updating existing customer in Supabase
   const handleUpdateCustomer = async (updatedCustomerData) => {
-    if (!user || !updatedCustomerData.customerId) return
+    // Support both 'id' and 'customerId' fields from different sources
+    const customerId = updatedCustomerData.customerId || updatedCustomerData.id
+    if (!user || !customerId) return
 
     try {
       const supabaseCustomerData = {
         name: updatedCustomerData.name,
-        phone: updatedCustomerData.phone,
-        whatsapp: updatedCustomerData.phone,
-        insta: updatedCustomerData.insta,
-        email: updatedCustomerData.email || '',
-        address: updatedCustomerData.address || '',
-        notes: updatedCustomerData.notes || '',
+        phone: updatedCustomerData.phone || null,
+        insta: updatedCustomerData.insta || null,
+        instagram: updatedCustomerData.insta || null, // Also save to instagram field for compatibility
+        email: updatedCustomerData.email || null,
+        address: updatedCustomerData.address || null,
+        notes: updatedCustomerData.notes || null,
+        source: updatedCustomerData.source || 'WhatsApp',
         updated_at: new Date().toISOString()
       }
 
       const { error } = await supabase
         .from('customers')
         .update(supabaseCustomerData)
-        .eq('id', updatedCustomerData.customerId)
+        .eq('id', customerId)
         .eq('user_id', user.id)
 
       if (error) throw error
 
-      // The real-time subscription will automatically update the list
-      // But we can also optimistically update local state
+      // Optimistically update local state
       setCustomers((prev) =>
         prev.map(customer =>
-          customer.id === updatedCustomerData.id 
+          customer.id === customerId || customer.customerId === customerId
             ? { 
                 ...customer,
-                ...updatedCustomerData,
+                name: updatedCustomerData.name,
+                phone: updatedCustomerData.phone || '',
+                whatsapp: updatedCustomerData.phone || '',
+                insta: updatedCustomerData.insta || '',
+                instagram: updatedCustomerData.insta || '',
+                email: updatedCustomerData.email || '',
+                address: updatedCustomerData.address || '',
+                notes: updatedCustomerData.notes || '',
+                source: updatedCustomerData.source || 'WhatsApp',
               } 
             : customer
         )

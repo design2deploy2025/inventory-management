@@ -1,17 +1,18 @@
-# Product Image Fix TODO
+# TODO - Fix Customers Table Issues
 
-## Objective
-Fix product image not properly saving to the database - images should be uploaded to Supabase Storage and fetched properly.
+## Issues to Fix:
 
-## Steps
+### 1. CustomersTable.jsx - handleUpdateCustomer function
+- [ ] Fix the update function to use correct column names (phone, instagram, insta)
+- [ ] Remove invalid 'whatsapp' column which doesn't exist in schema
+- [ ] Ensure proper data mapping
 
-1. [x] Analyze the codebase to understand the issue
-2. [x] Update ProductDetails.jsx - Add image upload to Supabase Storage function
-3. [x] Update ProductModal.jsx - Pass uploaded file separately for upload handling
-4. [ ] Test the implementation
+### 2. CustomerModal.jsx - onUpdate handler
+- [ ] Fix data structure passed to handleUpdateCustomer
+- [ ] Ensure customerId is properly passed for updates
 
-## Issue Identified
-- Current: Uses `URL.createObjectURL(file)` which creates temporary blob URLs
-- Problem: Blob URLs are temporary and invalid after page refresh
-- Solution: Upload images to Supabase Storage bucket and save permanent public URLs
+### 3. Test the fixes
+- [ ] Verify customers can be created
+- [ ] Verify customers can be edited
+- [ ] Verify customers can be deleted
 
