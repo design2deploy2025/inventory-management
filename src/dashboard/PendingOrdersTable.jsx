@@ -225,6 +225,9 @@ const PendingOrdersTable = () => {
 
       if (error) throw error
 
+      // Deduct stock from products after order is created
+      await deductStock(orderData.products, user.id)
+
       // The real-time subscription will automatically update the list
       // But we can also optimistically add to local state
       if (data && data[0]) {
@@ -256,11 +259,124 @@ const PendingOrdersTable = () => {
     }
   }
 
+  // Function to deduct stock from products
+  const deductStock = async (products, userId) => {
+    try {
+      for (const product of products) {
+        if (!product.id) {
+          console.error(`Product missing ID, skipping stock deduction:`, product.name)
+          continue
+        }
+
+        // Get current product quantity using ID
+        const { data: currentProduct, error: fetchError } = await supabase
+          .from('products')
+          .select('id, quantity, name')
+          .eq('user_id', userId)
+          .eq('id', product.id)
+          .single()
+
+        if (fetchError) {
+          console.error(`Error fetching product ${product.name}:`, fetchError.message)
+          continue
+        }
+
+        if (currentProduct) {
+          const newQuantity = Math.max(0, (currentProduct.quantity || 0) - (product.quantity || 1))
+          
+          // Update product quantity
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+            .eq('id', currentProduct.id)
+            .eq('user_id', userId)
+
+          if (updateError) {
+            console.error(`Error updating stock for ${product.name}:`, updateError.message)
+            continue
+          }
+
+          // Record stock history
+          await supabase.from('stock_history').insert({
+            user_id: userId,
+            product_id: currentProduct.id,
+            quantity_change: -(product.quantity || 1),
+            previous_quantity: currentProduct.quantity || 0,
+            new_quantity: newQuantity,
+            reason: 'Order placed'
+          })
+
+          console.log(`Deducted ${product.quantity || 1} from ${product.name}. New quantity: ${newQuantity}`)
+        }
+      }
+    } catch (err) {
+      console.error('Error deducting stock:', err.message)
+    }
+  }
+
+  // Function to restore stock (for cancellations)
+  const restoreStock = async (products, userId) => {
+    try {
+      for (const product of products) {
+        if (!product.id) {
+          console.error(`Product missing ID, skipping stock restoration:`, product.name)
+          continue
+        }
+
+        // Get current product quantity using ID
+        const { data: currentProduct, error: fetchError } = await supabase
+          .from('products')
+          .select('id, quantity, name')
+          .eq('user_id', userId)
+          .eq('id', product.id)
+          .single()
+
+        if (fetchError) {
+          console.error(`Error fetching product ${product.name}:`, fetchError.message)
+          continue
+        }
+
+        if (currentProduct) {
+          const newQuantity = (currentProduct.quantity || 0) + (product.quantity || 1)
+          
+          // Update product quantity
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
+            .eq('id', currentProduct.id)
+            .eq('user_id', userId)
+
+          if (updateError) {
+            console.error(`Error restoring stock for ${product.name}:`, updateError.message)
+            continue
+          }
+
+          // Record stock history
+          await supabase.from('stock_history').insert({
+            user_id: userId,
+            product_id: currentProduct.id,
+            quantity_change: product.quantity || 1,
+            previous_quantity: currentProduct.quantity || 0,
+            new_quantity: newQuantity,
+            reason: 'Order cancelled'
+          })
+
+          console.log(`Restored ${product.quantity || 1} to ${product.name}. New quantity: ${newQuantity}`)
+        }
+      }
+    } catch (err) {
+      console.error('Error restoring stock:', err.message)
+    }
+  }
+
   // Handle updating existing order in Supabase
   const handleUpdateOrder = async (updatedOrderData) => {
     if (!user || !updatedOrderData.orderId) return
 
     try {
+      // Get the original order to compare and adjust stock
+      const originalOrder = orders.find(o => o.orderId === updatedOrderData.orderId)
+      
       const supabaseOrderData = {
         customer_name: updatedOrderData.customerName,
         customer_phone: updatedOrderData.customerPhone,
@@ -283,6 +399,52 @@ const PendingOrdersTable = () => {
         .eq('user_id', user.id)
 
       if (error) throw error
+
+      // Handle stock adjustments based on order status change
+      if (originalOrder) {
+        // If order is being cancelled, restore stock
+        if (updatedOrderData.orderStatus === 'Cancelled' && originalOrder.orderStatus !== 'Cancelled') {
+          await restoreStock(originalOrder.products, user.id)
+        }
+        // If order is being restored from cancelled, deduct stock again
+        else if (originalOrder.orderStatus === 'Cancelled' && updatedOrderData.orderStatus !== 'Cancelled') {
+          await deductStock(updatedOrderData.products, user.id)
+        }
+        // If order is being modified (not cancelled), adjust stock
+        else if (originalOrder.orderStatus !== 'Cancelled' && updatedOrderData.orderStatus !== 'Cancelled') {
+          // Restore stock for products that were removed
+          const originalProducts = originalOrder.products || []
+          const newProducts = updatedOrderData.products || []
+          
+          // Find products that are in original but not in new (removed)
+          for (const origProd of originalProducts) {
+            const newProd = newProducts.find(p => p.id === origProd.id)
+            if (!newProd) {
+              // Product was removed, restore its stock
+              await restoreStock([origProd], user.id)
+            } else if (newProd.quantity !== origProd.quantity) {
+              // Quantity changed, adjust the difference
+              const qtyDiff = origProd.quantity - newProd.quantity
+              if (qtyDiff > 0) {
+                // Fewer items now, restore the difference
+                await restoreStock([{ ...newProd, quantity: qtyDiff }], user.id)
+              } else if (qtyDiff < 0) {
+                // More items now, deduct the difference
+                await deductStock([{ ...newProd, quantity: Math.abs(qtyDiff) }], user.id)
+              }
+            }
+          }
+          
+          // Find products that are in new but not in original (added)
+          for (const newProd of newProducts) {
+            const origProd = originalProducts.find(p => p.id === newProd.id)
+            if (!origProd) {
+              // New product added, deduct its stock
+              await deductStock([newProd], user.id)
+            }
+          }
+        }
+      }
 
       // The real-time subscription will automatically update the list
       // But we can also optimistically update local state

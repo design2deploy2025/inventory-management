@@ -260,12 +260,17 @@ const MainTable = () => {
   const deductStock = async (products, userId) => {
     try {
       for (const product of products) {
-        // Get current product quantity
+        if (!product.id) {
+          console.error(`Product missing ID, skipping stock deduction:`, product.name)
+          continue
+        }
+
+        // Get current product quantity using ID
         const { data: currentProduct, error: fetchError } = await supabase
           .from('products')
           .select('id, quantity, name')
           .eq('user_id', userId)
-          .eq('name', product.name)
+          .eq('id', product.id)
           .single()
 
         if (fetchError) {
@@ -310,12 +315,17 @@ const MainTable = () => {
   const restoreStock = async (products, userId) => {
     try {
       for (const product of products) {
-        // Get current product quantity
+        if (!product.id) {
+          console.error(`Product missing ID, skipping stock restoration:`, product.name)
+          continue
+        }
+
+        // Get current product quantity using ID
         const { data: currentProduct, error: fetchError } = await supabase
           .from('products')
           .select('id, quantity, name')
           .eq('user_id', userId)
-          .eq('name', product.name)
+          .eq('id', product.id)
           .single()
 
         if (fetchError) {
