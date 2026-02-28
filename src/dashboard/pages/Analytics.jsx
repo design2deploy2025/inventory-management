@@ -354,7 +354,7 @@ const Analytics = () => {
           Download Detailed Report
         </button>
       </div>
-      <StatCards/>
+      {/* <StatCards/> */}
       <TimePeriodStats/>
       <div className='px-9'>
       <TopSellingProducts/>

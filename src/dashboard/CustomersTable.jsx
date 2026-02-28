@@ -17,7 +17,7 @@ const CustomersTable = () => {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
-  const [sourceFilter, setSourceFilter] = useState('All')
+  // const [sourceFilter, setSourceFilter] = useState('All')
 
   // Fetch customers from Supabase
   const fetchCustomers = async () => {
@@ -51,7 +51,7 @@ const CustomersTable = () => {
         lifetimeValue: customer.lifetime_value || 0,
         repeatOrders: customer.repeat_orders || 0,
         lastOrderDetails: customer.last_order_details || 'No orders yet',
-        source: customer.instagram || customer.insta ? 'Instagram' : 'WhatsApp',
+        // source: customer.instagram || customer.insta ? 'Instagram' : 'WhatsApp',
         created_at: customer.created_at,
         updated_at: customer.updated_at
       })) || []
@@ -110,11 +110,11 @@ const CustomersTable = () => {
   const clearFilters = () => {
     setSearchTerm('')
     setSortBy('name')
-    setSourceFilter('All')
+    // setSourceFilter('All')
   }
 
   // Check if any filters are active
-  const hasActiveFilters = searchTerm !== '' || sortBy !== 'name' || sourceFilter !== 'All'
+  const hasActiveFilters = searchTerm !== '' || sortBy !== 'name'
 
   // Handle adding new customer
   const handleAddCustomer = () => {
@@ -168,7 +168,7 @@ const CustomersTable = () => {
           lifetimeValue: 0,
           repeatOrders: 0,
           lastOrderDetails: 'No orders yet',
-          source: data[0].instagram ? 'Instagram' : 'WhatsApp',
+          // source: data[0].instagram ? 'Instagram' : 'WhatsApp',
           created_at: data[0].created_at,
           updated_at: data[0].updated_at
         }
@@ -195,7 +195,7 @@ const CustomersTable = () => {
         email: updatedCustomerData.email || null,
         address: updatedCustomerData.address || null,
         notes: updatedCustomerData.notes || null,
-        source: updatedCustomerData.source || 'WhatsApp',
+        // source: updatedCustomerData.source || 'WhatsApp',
         updated_at: new Date().toISOString()
       }
 
@@ -221,7 +221,7 @@ const CustomersTable = () => {
                 email: updatedCustomerData.email || '',
                 address: updatedCustomerData.address || '',
                 notes: updatedCustomerData.notes || '',
-                source: updatedCustomerData.source || 'WhatsApp',
+                // source: updatedCustomerData.source || 'WhatsApp',
               } 
             : customer
         )
@@ -276,9 +276,9 @@ const CustomersTable = () => {
     }
 
     // Source filter
-    if (sourceFilter !== 'All') {
-      result = result.filter(customer => customer.source === sourceFilter)
-    }
+    // if (sourceFilter !== 'All') {
+    //   result = result.filter(customer => customer.source === sourceFilter)
+    // }
     
     // Sort
     result.sort((a, b) => {
@@ -297,7 +297,7 @@ const CustomersTable = () => {
     })
     
     return result
-  }, [customers, searchTerm, sortBy, sourceFilter])
+  }, [customers, searchTerm, sortBy])
 
   // Repeat order badge color helper
   const getRepeatOrderBadge = (count) => {
@@ -313,16 +313,16 @@ const CustomersTable = () => {
   }
 
   // Source badge helper
-  const getSourceBadge = (source) => {
-    switch (source) {
-      case 'WhatsApp':
-        return 'bg-green-500/10 text-green-400'
-      case 'Instagram':
-        return 'bg-pink-500/10 text-pink-400'
-      default:
-        return 'bg-gray-500/10 text-gray-400'
-    }
-  }
+  // const getSourceBadge = (source) => {
+  //   switch (source) {
+  //     case 'WhatsApp':
+  //       return 'bg-green-500/10 text-green-400'
+  //     case 'Instagram':
+  //       return 'bg-pink-500/10 text-pink-400'
+  //     default:
+  //       return 'bg-gray-500/10 text-gray-400'
+  //   }
+  // }
 
   return (
     <div className="p-6">
@@ -367,7 +367,7 @@ const CustomersTable = () => {
               </div>
 
               {/* Source Filter */}
-              <div className="min-w-[150px]">
+              {/* <div className="min-w-[150px]">
                 <select
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e.target.value)}
@@ -377,7 +377,7 @@ const CustomersTable = () => {
                   <option value="WhatsApp">WhatsApp</option>
                   <option value="Instagram">Instagram</option>
                 </select>
-              </div>
+              </div> */}
 
               {/* Sort By */}
               <div className="min-w-[150px]">
@@ -443,9 +443,9 @@ const CustomersTable = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Instagram
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Source
-                    </th>
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                       Last Order Date
                     </th>
@@ -487,11 +487,11 @@ const CustomersTable = () => {
                             <span className="text-slate-500">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(customer.source)}`}>
                             {customer.source}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
                           {customer.lastOrderDate}
                         </td>
