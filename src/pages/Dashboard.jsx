@@ -9,6 +9,7 @@ import Hotspots from '../dashboard/pages/Hotspots'
 import Checklists from '../dashboard/pages/Checklists'
 import Themes from '../dashboard/pages/Themes'
 import Settings from '../dashboard/pages/Settings'
+import Feedback from '../dashboard/pages/Feedback'
 import MainTable from '../dashboard/MainTable'
 import CustomersTable from '../dashboard/CustomersTable'
 import ProductDetails from '../dashboard/ProductDetails'
@@ -43,6 +44,8 @@ const Dashboard = () => {
         return <Themes />
       case 'settings':
         return <Settings />
+      case 'feedback':
+        return <Feedback />
       default:
         return <DashboardHome />
     }
