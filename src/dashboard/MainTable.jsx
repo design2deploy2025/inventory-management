@@ -200,6 +200,7 @@ const MainTable = () => {
       // Prepare order data for Supabase
       const supabaseOrderData = {
         user_id: user.id,
+        customer_id: orderData.customerId || null,
         customer_name: orderData.customerName,
         customer_phone: orderData.customerPhone,
         customer_whatsapp: orderData.customerWhatsApp || orderData.customerPhone,

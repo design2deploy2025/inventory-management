@@ -597,21 +597,21 @@ CREATE TRIGGER set_invoice_number_trigger
 -- HELPER FUNCTIONS
 -- =============================================================================
 
--- Function to update customer lifetime value
+-- Function to update customer lifetime value (from ALL orders, not just paid)
 CREATE OR REPLACE FUNCTION update_customer_lifetime_value()
 RETURNS TRIGGER AS $$
 DECLARE
     customer_total DECIMAL(10, 2);
     order_count INTEGER;
 BEGIN
-    -- Calculate lifetime value from paid orders
+    -- Calculate lifetime value from ALL orders (regardless of payment status)
+    -- This ensures lifetime value reflects all orders placed by the customer
     SELECT 
         COALESCE(SUM(total_price), 0), 
         COUNT(*)
     INTO customer_total, order_count
     FROM orders
-    WHERE customer_id = NEW.customer_id
-    AND payment_status = 'Paid';
+    WHERE customer_id = NEW.customer_id;
 
     -- Update customer record
     UPDATE customers
@@ -635,11 +635,120 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Trigger to update customer stats when a new order is inserted
+DROP TRIGGER IF EXISTS update_customer_stats ON orders;
 CREATE TRIGGER update_customer_stats
     AFTER INSERT ON orders
     FOR EACH ROW
     WHEN (NEW.customer_id IS NOT NULL)
     EXECUTE FUNCTION update_customer_lifetime_value();
+
+-- Function to update customer lifetime value when order is updated
+CREATE OR REPLACE FUNCTION update_customer_lifetime_value_on_update()
+RETURNS TRIGGER AS $$
+DECLARE
+    customer_total DECIMAL(10, 2);
+    order_count INTEGER;
+BEGIN
+    -- Only recalculate if customer_id or payment_status changed
+    IF OLD.customer_id IS DISTINCT FROM NEW.customer_id OR 
+       OLD.payment_status IS DISTINCT FROM NEW.payment_status OR
+       OLD.total_price IS DISTINCT FROM NEW.total_price THEN
+        
+        -- If customer was changed, update the old customer
+        IF OLD.customer_id IS NOT NULL AND OLD.customer_id != NEW.customer_id THEN
+            SELECT COALESCE(SUM(total_price), 0), COUNT(*)
+            INTO customer_total, order_count
+            FROM orders
+            WHERE customer_id = OLD.customer_id;
+
+            UPDATE customers
+            SET 
+                lifetime_value = customer_total,
+                repeat_orders = order_count,
+                updated_at = NOW()
+            WHERE id = OLD.customer_id;
+        END IF;
+
+        -- Update the new/current customer
+        IF NEW.customer_id IS NOT NULL THEN
+            SELECT COALESCE(SUM(total_price), 0), COUNT(*)
+            INTO customer_total, order_count
+            FROM orders
+            WHERE customer_id = NEW.customer_id;
+
+            -- Get the most recent order for this customer
+            UPDATE customers
+            SET 
+                lifetime_value = customer_total,
+                repeat_orders = order_count,
+                last_order_date = (
+                    SELECT created_at::date 
+                    FROM orders 
+                    WHERE customer_id = NEW.customer_id 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                ),
+                last_order_details = (
+                    SELECT last_order_details 
+                    FROM customers 
+                    WHERE id = NEW.customer_id
+                ),
+                updated_at = NOW()
+            WHERE id = NEW.customer_id;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update customer stats when an order is updated
+CREATE TRIGGER update_customer_stats_on_update
+    AFTER UPDATE ON orders
+    FOR EACH ROW
+    WHEN (OLD.customer_id IS NOT NULL OR NEW.customer_id IS NOT NULL)
+    EXECUTE FUNCTION update_customer_lifetime_value_on_update();
+
+-- Function to update customer lifetime value when order is deleted
+CREATE OR REPLACE FUNCTION update_customer_lifetime_value_on_delete()
+RETURNS TRIGGER AS $$
+DECLARE
+    customer_total DECIMAL(10, 2);
+    order_count INTEGER;
+BEGIN
+    -- Recalculate for the customer whose order was deleted
+    IF OLD.customer_id IS NOT NULL THEN
+        SELECT COALESCE(SUM(total_price), 0), COUNT(*)
+        INTO customer_total, order_count
+        FROM orders
+        WHERE customer_id = OLD.customer_id;
+
+        UPDATE customers
+        SET 
+            lifetime_value = customer_total,
+            repeat_orders = order_count,
+            last_order_date = (
+                SELECT created_at::date 
+                FROM orders 
+                WHERE customer_id = OLD.customer_id 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ),
+            updated_at = NOW()
+        WHERE id = OLD.customer_id;
+    END IF;
+
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update customer stats when an order is deleted
+CREATE TRIGGER update_customer_stats_on_delete
+    AFTER DELETE ON orders
+    FOR EACH ROW
+    WHEN (OLD.customer_id IS NOT NULL)
+    EXECUTE FUNCTION update_customer_lifetime_value_on_delete();
 
 -- Function to update product total_sold when order is completed
 CREATE OR REPLACE FUNCTION update_product_sales()
@@ -801,6 +910,62 @@ VALUES
     (auth.uid(), 'Enterprise License', 1499.99, 'Other', 50, 'Active'),
     (auth.uid(), 'Professional Plan', 599.99, 'Other', 75, 'Active');
 */
+
+-- =============================================================================
+-- DATA MIGRATION FUNCTION (Run once to fix existing customer data)
+-- =============================================================================
+
+-- Function to recalculate all customer lifetime values from existing orders
+-- Run this SQL to fix existing customer data:
+-- SELECT recalculate_all_customer_lifetime_values();
+CREATE OR REPLACE FUNCTION recalculate_all_customer_lifetime_values()
+RETURNS void AS $$
+DECLARE
+    customer_record RECORD;
+BEGIN
+    -- Loop through all customers
+    FOR customer_record IN 
+        SELECT id FROM customers
+    LOOP
+        UPDATE customers
+        SET 
+            lifetime_value = (
+                SELECT COALESCE(SUM(total_price), 0)
+                FROM orders
+                WHERE customer_id = customer_record.id
+            ),
+            repeat_orders = (
+                SELECT COUNT(*)
+                FROM orders
+                WHERE customer_id = customer_record.id
+            ),
+            last_order_date = (
+                SELECT created_at::date 
+                FROM orders 
+                WHERE customer_id = customer_record.id 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            ),
+            last_order_details = (
+                SELECT string_agg(
+                    (p->>'name') || ' - ₹' || (p->>'price'),
+                    ', '
+                )
+                FROM (
+                    SELECT jsonb_array_elements(products) as p
+                    FROM orders
+                    WHERE customer_id = customer_record.id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ) AS product_data
+            ),
+            updated_at = NOW()
+        WHERE id = customer_record.id;
+    END LOOP;
+    
+    RAISE NOTICE 'Successfully recalculated lifetime values for all customers';
+END;
+$$ LANGUAGE plpgsql;
 
 -- =============================================================================
 -- END OF DATABASE SCHEMA
