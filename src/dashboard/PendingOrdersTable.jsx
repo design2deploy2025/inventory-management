@@ -17,7 +17,7 @@ const PendingOrdersTable = () => {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [orderToEdit, setOrderToEdit] = useState(null)
 
-  // Filter states - Default to Pending only
+  // Filter states - Default to Pending and Processing
   const [searchTerm, setSearchTerm] = useState('')
   const [orderStatusFilter, setOrderStatusFilter] = useState('Pending')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All')
@@ -144,24 +144,24 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Filter orders based on current filters - Always filter by Pending
+  // Filter orders based on current filters - Always filter by Pending and Processing
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
-      // Always filter by Pending status
-      const isPending = order.orderStatus === 'Pending'
+      // Always filter by Pending OR Processing status (show until completed or cancelled)
+      const isPendingOrProcessing = order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
       
       // Search filter (Order ID or Product Name)
       const matchesSearch = 
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.products && order.products.some(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())))
       
-      // Order Status filter - locked to Pending
+      // Order Status filter - locked to Pending/Processing
       const matchesOrderStatus = orderStatusFilter === 'All' || order.orderStatus === orderStatusFilter
       
       // Payment Status filter
       const matchesPaymentStatus = paymentStatusFilter === 'All' || order.paymentStatus === paymentStatusFilter
       
-      return isPending && matchesSearch && matchesOrderStatus && matchesPaymentStatus
+      return isPendingOrProcessing && matchesSearch && matchesOrderStatus && matchesPaymentStatus
     })
   }, [orders, searchTerm, orderStatusFilter, paymentStatusFilter])
 
@@ -328,7 +328,7 @@ const PendingOrdersTable = () => {
           {/* Header */}
           <div className="px-6 py-4 border-b border-gray-800">
             <h2 className="text-xl font-semibold text-white">Pending Orders</h2>
-            <p className="text-sm text-slate-400 mt-1">Orders awaiting processing from WhatsApp & Instagram</p>
+            <p className="text-sm text-slate-400 mt-1">Orders awaiting processing from WhatsApp & Instagram (Pending & Processing)</p>
           </div>
 
           {/* Filter Bar */}
@@ -376,7 +376,7 @@ const PendingOrdersTable = () => {
 
               {/* Results Count */}
               <div className="ml-auto text-sm text-slate-400">
-                Showing {filteredOrders.length} pending orders
+                Showing {filteredOrders.length} pending/processing orders
               </div>
             </div>
           </div>
@@ -487,8 +487,8 @@ const PendingOrdersTable = () => {
                           <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <p className="text-lg">No pending orders found</p>
-                          <p className="text-sm mt-1">Try adjusting your filters</p>
+                          <p className="text-lg">No pending/processing orders found</p>
+                          <p className="text-sm mt-1">All orders are either completed or cancelled</p>
                         </div>
                       </td>
                     </tr>
@@ -501,7 +501,7 @@ const PendingOrdersTable = () => {
           {/* Footer */}
           <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
             <p className="text-sm text-slate-400">
-              Showing {filteredOrders.length} pending orders
+              Showing {filteredOrders.length} pending/processing orders
             </p>
             <div className="flex gap-2">
               <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredOrders.length === 0}>
