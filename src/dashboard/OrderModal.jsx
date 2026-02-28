@@ -290,18 +290,11 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     }, 0)
   }
 
-  // Check if customer with similar details already exists
+  // Check if customer with similar details already exists (only by phone or instagram)
   const checkExistingCustomer = async (customerData) => {
     if (!user) return { exists: false, customer: null }
     
     try {
-      // Build query to find existing customer
-      let query = supabase
-        .from('customers')
-        .select('id, name, phone, whatsapp, instagram, insta, email, address')
-        .eq('user_id', user.id)
-        .limit(1)
-
       // Check by phone if provided
       if (customerData.phone) {
         const { data: phoneData } = await supabase
@@ -330,20 +323,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
         }
       }
 
-      // Check by email if provided
-      if (customerData.email) {
-        const { data: emailData } = await supabase
-          .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
-          .eq('user_id', user.id)
-          .eq('email', customerData.email.toLowerCase())
-          .limit(1)
-        
-        if (emailData && emailData.length > 0) {
-          return { exists: true, customer: emailData[0], field: 'email' }
-        }
-      }
-
       return { exists: false, customer: null, field: null }
     } catch (err) {
       console.error('Error checking existing customer:', err.message)
@@ -356,7 +335,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     let customerId = selectedCustomerId
 
     // If it's a new customer (not selected from dropdown), check for duplicates and save
-    if (!customerId && formData.customerName) {
+    // Only run this check when creating a new order (not editing)
+    if (!isEditMode && !customerId && formData.customerName) {
       // Prepare customer data for checking
       const customerData = {
         name: formData.customerName,
@@ -425,7 +405,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
 
     const orderData = {
       id: formData.orderId,
-      customerId: customerId, // Include customer ID if available
+      orderId: isEditMode ? orderToEdit?.orderId : null, // Include the UUID for editing
+      customerId: customerId || orderToEdit?.customerId || null, // Include customer ID if available
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
       customerInstagram: formData.customerInstagram,
