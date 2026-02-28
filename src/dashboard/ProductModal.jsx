@@ -113,7 +113,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
   // Handle save
   const handleSave = () => {
     if (onSave) {
-      onSave({ ...formData })
+      onSave({ ...formData, uploadedFile })
     }
     onClose()
   }

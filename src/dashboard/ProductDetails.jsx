@@ -127,7 +127,41 @@ export default function ProductDetails() {
 
     try {
       // Remove UI-specific fields (keep price in supabaseData)
-      const { productId, isNew, priceValue, ...supabaseData } = productData
+      const { productId, isNew, priceValue, uploadedFile, ...supabaseData } = productData
+      
+      // Handle image upload to Supabase Storage
+      let imageUrl = supabaseData.imageSrc || null
+      
+      // Check if there's a new file to upload (not a blob URL)
+      if (uploadedFile && productData.imageSrc && productData.imageSrc.startsWith('blob:')) {
+        try {
+          // Upload image to Supabase Storage
+          const fileName = `${user.id}/${Date.now()}-${uploadedFile.name}`
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, uploadedFile, {
+              cacheControl: '3600',
+              upsert: false
+            })
+
+          if (uploadError) {
+            console.error('Image upload error:', uploadError)
+            // Continue without image if upload fails
+          } else {
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('product-images')
+              .getPublicUrl(fileName)
+            
+            imageUrl = publicUrl
+            console.log('Image uploaded successfully:', publicUrl)
+          }
+        } catch (uploadErr) {
+          console.error('Image upload exception:', uploadErr)
+          // Continue without image if upload fails
+        }
+      }
       
       // Format data for Supabase
       const supabaseProductData = {
@@ -139,9 +173,9 @@ export default function ProductDetails() {
         quantity: parseInt(supabaseData.quantity) || 0,
         sku: supabaseData.sku || null, // Will be auto-generated if null
         status: supabaseData.status || 'Active',
-        image_src: supabaseData.imageSrc || null,
+        image_src: imageUrl,
+        image_url: imageUrl,
         image_alt: supabaseData.imageAlt || null,
-        image_url: supabaseData.imageSrc || null,
         tags: supabaseData.tags || []
       }
 

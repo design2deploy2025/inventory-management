@@ -1,17 +1,17 @@
-# TODO - Remove existing customer check modifications
+# Product Image Fix TODO
 
-## Task:
-- Remove existing customer check while editing order (only check while creating new order)
-- Check should be based on instagram id OR phone (if any one matches)
+## Objective
+Fix product image not properly saving to the database - images should be uploaded to Supabase Storage and fetched properly.
 
-## Steps:
-- [x] 1. Modify checkExistingCustomer function - remove email check, keep only phone and instagram (OR logic)
-- [x] 2. Modify handleSave function - add !isEditMode condition to only run customer check for new orders
+## Steps
 
-## File edited:
-- src/dashboard/OrderModal.jsx
+1. [x] Analyze the codebase to understand the issue
+2. [x] Update ProductDetails.jsx - Add image upload to Supabase Storage function
+3. [x] Update ProductModal.jsx - Pass uploaded file separately for upload handling
+4. [ ] Test the implementation
 
-## Summary of changes:
-1. Removed email check from checkExistingCustomer function - now only checks phone OR instagram
-2. Added !isEditMode condition to only run customer duplicate check when creating new orders (not editing)
+## Issue Identified
+- Current: Uses `URL.createObjectURL(file)` which creates temporary blob URLs
+- Problem: Blob URLs are temporary and invalid after page refresh
+- Solution: Upload images to Supabase Storage bucket and save permanent public URLs
 
