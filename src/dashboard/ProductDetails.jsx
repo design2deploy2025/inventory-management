@@ -171,7 +171,7 @@ export default function ProductDetails() {
         description: supabaseData.description || '',
         category: supabaseData.category || 'Other',
         quantity: parseInt(supabaseData.quantity) || 0,
-        sku: supabaseData.sku || null, // Will be auto-generated if null
+        sku: productData.isNew ? null : (supabaseData.sku || null), // Auto-generate SKU for new products
         status: supabaseData.status || 'Active',
         image_src: imageUrl,
         image_url: imageUrl,

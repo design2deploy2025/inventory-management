@@ -563,7 +563,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                       </select>
                     </div>
 
-                    {/* Order Status */}
+{/* Order Status */}
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         Order Status
@@ -578,6 +578,23 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                         <option value="Processing">Processing</option>
                         <option value="Completed">Completed</option>
                         <option value="Cancelled">Cancelled</option>
+                      </select>
+                    </div>
+
+                    {/* Source */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        Source
+                      </label>
+                      <select
+                        name="source"
+                        value={formData.source}
+                        onChange={handleChange}
+                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                      >
+                        <option value="Instagram">Instagram</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Call">Call</option>
                       </select>
                     </div>
                   </div>
