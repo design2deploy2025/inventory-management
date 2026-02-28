@@ -4,7 +4,7 @@ import TimePeriodStats from '../TimePeriodStats'
 import TopSellingProducts from '../TopSellingProducts'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { FaDownload } from 'react-icons/fa'
+import { FaDownload, FaSpinner } from 'react-icons/fa'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 
@@ -177,40 +177,90 @@ const Analytics = () => {
   const generatePDF = () => {
     const doc = new jsPDF()
     const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
     
-    // Header
-    doc.setFillColor(10, 10, 10)
-    doc.rect(0, 0, pageWidth, 40, 'F')
+    // Generate filename with date-time format
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const hours = String(now.getHours()).padStart(2, '0')
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    const filename = `Report-${year}-${month}-${day}-${hours}-${minutes}.pdf`
     
+    // Color palette
+    const primaryColor = [59, 130, 246] // Blue
+    const darkColor = [30, 41, 59] // Dark slate
+    const lightGray = [248, 250, 252]
+    const textColor = [51, 65, 85]
+    
+    // Header with clean gradient effect (simulated with rectangles)
+    doc.setFillColor(...primaryColor)
+    doc.rect(0, 0, pageWidth, 45, 'F')
+    
+    // Accent line
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, 45, pageWidth, 2, 'F')
+    
+    // Header text
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(22)
+    doc.setFontSize(24)
     doc.setFont('helvetica', 'bold')
-    doc.text('Business Analytics Report', pageWidth / 2, 20, { align: 'center' })
+    doc.text('Business Analytics Report', pageWidth / 2, 22, { align: 'center' })
     
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    const dateStr = new Date().toLocaleDateString('en-US', { 
+    const dateStr = now.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     })
-    doc.text(`Generated: ${dateStr}`, pageWidth / 2, 30, { align: 'center' })
+    doc.text(`Generated: ${dateStr}`, pageWidth / 2, 35, { align: 'center' })
     
     // Reset text color
-    doc.setTextColor(0, 0, 0)
+    doc.setTextColor(...textColor)
     
-    let yPos = 50
+    let yPos = 58
+    
+    // Executive Summary Section
+    doc.setFillColor(...lightGray)
+    doc.roundedRect(14, yPos - 5, pageWidth - 28, 30, 3, 3, 'F')
+    
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Executive Summary', 20, yPos + 3)
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    
+    const totalOrders = reportData.timePeriod.year.ordersReceived || 0
+    const totalRevenue = reportData.timePeriod.year.revenue || 0
+    const totalStock = reportData.timePeriod.year.stock || 0
+    const topProduct = reportData.monthlyBestSellers[0]?.name || 'N/A'
+    
+    const summaryText = [
+      `Total Orders (Year): ${totalOrders.toLocaleString()}`,
+      `Total Revenue (Year): ₹${totalRevenue.toLocaleString()}`,
+      `Total Stock: ${totalStock.toLocaleString()} units`,
+      `Top Product: ${topProduct}`
+    ]
+    
+    summaryText.forEach((text, index) => {
+      doc.text(text, 20, yPos + 12 + (index * 6))
+    })
+    
+    yPos = 95
     
     // Time Period Stats Section
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
     doc.text('Time Period Statistics', 14, yPos)
-    yPos += 10
+    yPos += 8
     
     // Create time period stats table
-    const timePeriodHeaders = [['Time Period', 'Orders Received', 'Revenue (₹)', 'Stock', 'Stock Value (₹)']]
+    const timePeriodHeaders = [['Time Period', 'Orders', 'Revenue (₹)', 'Stock', 'Stock Value (₹)']]
     const timePeriodTableData = [
       ['Today', reportData.timePeriod.day.ordersReceived?.toString() || '0', 
        (reportData.timePeriod.day.revenue || 0).toLocaleString(), 
@@ -234,23 +284,39 @@ const Analytics = () => {
       head: timePeriodHeaders,
       body: timePeriodTableData,
       startY: yPos,
-      theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10, cellPadding: 3 },
-      alternateRowStyles: { fillColor: [245, 247, 250] }
+      theme: 'grid',
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: 255, 
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        halign: 'center'
+      },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold' },
+        1: { halign: 'center' },
+        2: { halign: 'right' },
+        3: { halign: 'center' },
+        4: { halign: 'right' }
+      }
     })
     
-    yPos = doc.lastAutoTable.finalY + 20
+    yPos = doc.lastAutoTable.finalY + 18
     
     // Weekly Best Sellers Section
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
     doc.text('Weekly Best Sellers', 14, yPos)
-    yPos += 10
+    yPos += 8
     
-    const weeklyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth (%)']]
-    const weeklyBody = reportData.weeklyBestSellers.map(p => [
-      p.id,
+    const weeklyHeaders = [['#', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth']]
+    const weeklyBody = reportData.weeklyBestSellers.map((p, index) => [
+      index + 1,
       p.name,
       p.units.toString(),
       p.revenue.toLocaleString(),
@@ -259,25 +325,41 @@ const Analytics = () => {
     
     autoTable(doc, {
       head: weeklyHeaders,
-      body: weeklyBody.length > 0 ? weeklyBody : [['No data', '-', '-', '-', '-']],
+      body: weeklyBody.length > 0 ? weeklyBody : [['1', 'No data', '-', '-', '-']],
       startY: yPos,
-      theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10, cellPadding: 3 },
-      alternateRowStyles: { fillColor: [245, 247, 250] }
+      theme: 'grid',
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: 255, 
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        halign: 'center'
+      },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        0: { halign: 'center', fontStyle: 'bold' },
+        1: { halign: 'left' },
+        2: { halign: 'center' },
+        3: { halign: 'right' },
+        4: { halign: 'center' }
+      }
     })
     
-    yPos = doc.lastAutoTable.finalY + 20
+    yPos = doc.lastAutoTable.finalY + 18
     
     // Monthly Best Sellers Section
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
     doc.text('Monthly Best Sellers', 14, yPos)
-    yPos += 10
+    yPos += 8
     
-    const monthlyHeaders = [['Product ID', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth (%)']]
-    const monthlyBody = reportData.monthlyBestSellers.map(p => [
-      p.id,
+    const monthlyHeaders = [['#', 'Product Name', 'Units Sold', 'Revenue (₹)', 'Growth']]
+    const monthlyBody = reportData.monthlyBestSellers.map((p, index) => [
+      index + 1,
       p.name,
       p.units.toLocaleString(),
       p.revenue.toLocaleString(),
@@ -286,25 +368,41 @@ const Analytics = () => {
     
     autoTable(doc, {
       head: monthlyHeaders,
-      body: monthlyBody.length > 0 ? monthlyBody : [['No data', '-', '-', '-', '-']],
+      body: monthlyBody.length > 0 ? monthlyBody : [['1', 'No data', '-', '-', '-']],
       startY: yPos,
-      theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10, cellPadding: 3 },
-      alternateRowStyles: { fillColor: [245, 247, 250] }
+      theme: 'grid',
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: 255, 
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        halign: 'center'
+      },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        0: { halign: 'center', fontStyle: 'bold' },
+        1: { halign: 'left' },
+        2: { halign: 'center' },
+        3: { halign: 'right' },
+        4: { halign: 'center' }
+      }
     })
     
-    yPos = doc.lastAutoTable.finalY + 20
+    yPos = doc.lastAutoTable.finalY + 18
     
     // Fast Selling Products Section
     doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.text('Fast Selling Products', 14, yPos)
-    yPos += 10
+    doc.text('Fast Selling Products (Velocity)', 14, yPos)
+    yPos += 8
     
-    const fastHeaders = [['Product ID', 'Product Name', 'Avg. Time', 'Units Sold', 'Velocity']]
-    const fastBody = reportData.fastSellers.map(p => [
-      p.id,
+    const fastHeaders = [['#', 'Product Name', 'Avg. Time', 'Units Sold', 'Velocity']]
+    const fastBody = reportData.fastSellers.map((p, index) => [
+      index + 1,
       p.name,
       p.avgTime,
       p.units.toString(),
@@ -313,30 +411,49 @@ const Analytics = () => {
     
     autoTable(doc, {
       head: fastHeaders,
-      body: fastBody.length > 0 ? fastBody : [['No data', '-', '-', '-', '-']],
+      body: fastBody.length > 0 ? fastBody : [['1', 'No data', '-', '-', '-']],
       startY: yPos,
-      theme: 'striped',
-      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 10, cellPadding: 3 },
-      alternateRowStyles: { fillColor: [245, 247, 250] }
+      theme: 'grid',
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: 255, 
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 4,
+        halign: 'center'
+      },
+      alternateRowStyles: { fillColor: lightGray },
+      columnStyles: {
+        0: { halign: 'center', fontStyle: 'bold' },
+        1: { halign: 'left' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'center' }
+      }
     })
     
     // Footer
     const pageCount = doc.internal.getNumberOfPages()
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i)
+      doc.setFillColor(...darkColor)
+      doc.rect(0, pageHeight - 12, pageWidth, 12, 'F')
+      
       doc.setFontSize(8)
-      doc.setTextColor(128, 128, 128)
+      doc.setTextColor(255, 255, 255)
       doc.text(
         `Page ${i} of ${pageCount}`,
         pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
+        pageHeight - 5,
         { align: 'center' }
       )
     }
     
     // Save the PDF
-    doc.save('business-analytics-report.pdf')
+    doc.save(filename)
   }
 
   return (
@@ -348,10 +465,14 @@ const Analytics = () => {
         <button
           onClick={generatePDF}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
         >
-          <FaDownload className="text-xs" />
-          Download Detailed Report
+          {loading ? (
+            <FaSpinner className="animate-spin text-xs" />
+          ) : (
+            <FaDownload className="text-xs" />
+          )}
+          {loading ? 'Generating...' : 'Download Detailed Report'}
         </button>
       </div>
       {/* <StatCards/> */}
