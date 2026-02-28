@@ -968,6 +968,39 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =============================================================================
+-- FEEDBACK TABLE
+-- =============================================================================
+
+CREATE TABLE feedback (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    user_name TEXT,
+    subject TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'suggestion',
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Users can view their own feedback"
+    ON feedback FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own feedback"
+    ON feedback FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+-- Index for better performance
+CREATE INDEX idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX idx_feedback_created_at ON feedback(created_at DESC);
+
+-- Enable real-time for feedback
+ALTER PUBLICATION supabase_realtime ADD TABLE feedback;
+
+-- =============================================================================
 -- END OF DATABASE SCHEMA
 -- =============================================================================
 

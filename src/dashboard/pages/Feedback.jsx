@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
 
 const Feedback = () => {
   const { user } = useAuth()
@@ -43,14 +44,34 @@ const Feedback = () => {
       setSending(true)
       setError(null)
       
-      // Simulate sending feedback (in production, you'd save to database)
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Get user name from profiles table
+      let userName = null
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('business_name, owner_name')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile) {
+          userName = profile.business_name || profile.owner_name || null
+        }
+      }
       
-      console.log('Feedback submitted:', {
-        user_id: user?.id,
-        ...formData,
-        submitted_at: new Date().toISOString()
-      })
+      // Insert feedback into database
+      const { error: feedbackError } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: user.id,
+          user_name: userName,
+          subject: formData.subject,
+          category: formData.category,
+          description: formData.description
+        })
+      
+      if (feedbackError) {
+        throw feedbackError
+      }
       
       setSuccess(true)
       setFormData({
