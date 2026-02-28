@@ -17,6 +17,9 @@ export function Login() {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: {
+        expires_in: 2592000 // 30 days in seconds
+      }
     })
 
     if (error) {
