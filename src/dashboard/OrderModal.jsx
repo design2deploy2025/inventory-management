@@ -23,7 +23,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     orderId: '',
     customerName: '',
     customerPhone: '',
-    customerWhatsApp: '',
     customerInstagram: '',
     customerEmail: '',
     customerAddress: '',
@@ -104,7 +103,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     return customers.filter(customer => 
       customer.name?.toLowerCase().includes(query) ||
       customer.phone?.includes(query) ||
-      customer.whatsapp?.includes(query) ||
       customer.insta?.toLowerCase().includes(query)
     ) // Show all matching results (no limit)
   }, [customers, customerSearchQuery])
@@ -137,7 +135,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           orderId: orderToEdit.id,
           customerName: orderToEdit.customerName || '',
           customerPhone: orderToEdit.customerPhone || '',
-          customerWhatsApp: orderToEdit.customerWhatsApp || '',
           customerInstagram: orderToEdit.customerInstagram || '',
           customerEmail: '',
           customerAddress: '',
@@ -157,7 +154,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           orderId: `#ORD-${orderNumber}`,
           customerName: '',
           customerPhone: '',
-          customerWhatsApp: '',
           customerInstagram: '',
           customerEmail: '',
           customerAddress: '',
@@ -192,7 +188,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       ...prev,
       customerName: customer.name || '',
       customerPhone: customer.phone || '',
-      customerWhatsApp: customer.whatsapp || customer.phone || '',
       customerInstagram: customer.instagram || customer.insta || '',
       customerEmail: customer.email || '',
       customerAddress: customer.address || '',
@@ -208,7 +203,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       ...prev,
       customerName: '',
       customerPhone: '',
-      customerWhatsApp: '',
       customerInstagram: '',
       customerEmail: '',
       customerAddress: '',
@@ -312,27 +306,13 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       if (customerData.phone) {
         const { data: phoneData } = await supabase
           .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
           .eq('phone', customerData.phone)
           .limit(1)
         
         if (phoneData && phoneData.length > 0) {
           return { exists: true, customer: phoneData[0], field: 'phone' }
-        }
-      }
-
-      // Check by whatsapp if provided
-      if (customerData.whatsapp) {
-        const { data: whatsappData } = await supabase
-          .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
-          .eq('user_id', user.id)
-          .eq('whatsapp', customerData.whatsapp)
-          .limit(1)
-        
-        if (whatsappData && whatsappData.length > 0) {
-          return { exists: true, customer: whatsappData[0], field: 'whatsapp' }
         }
       }
 
@@ -381,7 +361,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       const customerData = {
         name: formData.customerName,
         phone: formData.customerPhone || null,
-        whatsapp: formData.customerWhatsApp || formData.customerPhone || null,
         instagram: formData.customerInstagram || null,
         email: formData.customerEmail || null,
       }
@@ -423,13 +402,12 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
             user_id: user.id,
             name: formData.customerName,
             phone: formData.customerPhone || null,
-            whatsapp: formData.customerWhatsApp || formData.customerPhone || null,
             instagram: formData.customerInstagram || null,
             insta: formData.customerInstagram || null,
             email: formData.customerEmail || null,
             address: formData.customerAddress || null,
           })
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .single()
 
         if (customerError) throw customerError
@@ -450,7 +428,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       customerId: customerId, // Include customer ID if available
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
-      customerWhatsApp: formData.customerWhatsApp,
       customerInstagram: formData.customerInstagram,
       customerEmail: formData.customerEmail,
       customerAddress: formData.customerAddress,
@@ -483,7 +460,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       orderId: '',
       customerName: '',
       customerPhone: '',
-      customerWhatsApp: '',
       customerInstagram: '',
       customerEmail: '',
       customerAddress: '',
@@ -709,8 +685,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                                     <div>
                                       <p className="text-sm font-medium text-white">{customer.name}</p>
                                       <p className="text-xs text-slate-400">
-                                        {customer.phone || customer.whatsapp ? `+91 ${(customer.phone || customer.whatsapp)?.slice(-10)}` : ''}
-                                        {customer.phone && customer.whatsapp ? ' • ' : ''}
+                                        {customer.phone ? `+91 ${customer.phone?.slice(-10)}` : ''}
                                         {customer.insta || customer.instagram ? `@${customer.insta || customer.instagram}` : ''}
                                       </p>
                                     </div>
@@ -749,21 +724,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                         type="tel"
                         name="customerPhone"
                         value={formData.customerPhone}
-                        onChange={handleChange}
-                        placeholder="+91 XXXXX XXXXX"
-                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                      />
-                    </div>
-
-                    {/* WhatsApp */}
-                    <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-2">
-                        WhatsApp Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="customerWhatsApp"
-                        value={formData.customerWhatsApp}
                         onChange={handleChange}
                         placeholder="+91 XXXXX XXXXX"
                         className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
