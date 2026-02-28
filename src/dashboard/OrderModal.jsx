@@ -83,7 +83,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       setLoadingCustomers(true)
       const { data, error } = await supabase
         .from('customers')
-        .select('id, name, phone, whatsapp, instagram, insta, email, address')
+        .select('id, name, phone, instagram, insta, email, address')
         .eq('user_id', user.id)
         .order('name', { ascending: true })
 
@@ -283,43 +283,93 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     }))
   }
 
-  // Calculate total price
-  const calculateTotal = () => {
-    return formData.selectedProducts.reduce((total, product) => {
-      return total + (product.price * product.quantity)
-    }, 0)
-  }
-
-  // Check if customer with similar details already exists (only by phone or instagram)
+  // Check if customer with similar details already exists
   const checkExistingCustomer = async (customerData) => {
-    if (!user) return { exists: false, customer: null }
-    
     try {
+      // Build query to check for existing customer
+      let query = supabase
+        .from('customers')
+        .select('id, name, phone, instagram, insta, email, address')
+        .eq('user_id', user.id)
+        .limit(10)
+
+      // Check by name first (case insensitive)
+      if (customerData.name) {
+        const { data: nameMatches, error: nameError } = await supabase
+          .from('customers')
+          .select('id, name, phone, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .ilike('name', customerData.name)
+          .limit(5)
+
+        if (nameError) throw nameError
+
+        if (nameMatches && nameMatches.length > 0) {
+          return {
+            exists: true,
+            customer: nameMatches[0],
+            field: 'name'
+          }
+        }
+      }
+
       // Check by phone if provided
       if (customerData.phone) {
-        const { data: phoneData } = await supabase
+        const { data: phoneMatches, error: phoneError } = await supabase
           .from('customers')
           .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
           .eq('phone', customerData.phone)
-          .limit(1)
-        
-        if (phoneData && phoneData.length > 0) {
-          return { exists: true, customer: phoneData[0], field: 'phone' }
+          .limit(5)
+
+        if (phoneError) throw phoneError
+
+        if (phoneMatches && phoneMatches.length > 0) {
+          return {
+            exists: true,
+            customer: phoneMatches[0],
+            field: 'phone'
+          }
         }
       }
 
-      // Check by instagram/insta if provided
+      // Check by instagram if provided
       if (customerData.instagram) {
-        const { data: instaData } = await supabase
+        const { data: instaMatches, error: instaError } = await supabase
           .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
-          .eq('instagram', customerData.instagram.toLowerCase())
-          .limit(1)
-        
-        if (instaData && instaData.length > 0) {
-          return { exists: true, customer: instaData[0], field: 'instagram' }
+          .or(`instagram.ilike.%${customerData.instagram}%,insta.ilike.%${customerData.instagram}%`)
+          .limit(5)
+
+        if (instaError) throw instaError
+
+        if (instaMatches && instaMatches.length > 0) {
+          return {
+            exists: true,
+            customer: instaMatches[0],
+            field: 'instagram'
+          }
+        }
+      }
+
+      // Check by email if provided
+      if (customerData.email) {
+        const { data: emailMatches, error: emailError } = await supabase
+          .from('customers')
+          .select('id, name, phone, instagram, insta, email, address')
+          .eq('user_id', user.id)
+          .eq('email', customerData.email)
+          .limit(5)
+
+        if (emailError) throw emailError
+
+        if (emailMatches && emailMatches.length > 0) {
+          return {
+            exists: true,
+            customer: emailMatches[0],
+            field: 'email'
+          }
         }
       }
 
@@ -328,6 +378,13 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       console.error('Error checking existing customer:', err.message)
       return { exists: false, customer: null, field: null }
     }
+  }
+
+  // Calculate total price
+  const calculateTotal = () => {
+    return formData.selectedProducts.reduce((total, product) => {
+      return total + (product.price * product.quantity)
+    }, 0)
   }
 
   // Handle save/create
@@ -514,14 +571,12 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                           type="text"
                           name="orderId"
                           value={formData.orderId}
-                          readOnly={isEditMode}
-                          className={`block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${isEditMode ? 'cursor-not-allowed opacity-75' : ''}`}
+                          readOnly
+                          className="block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors cursor-not-allowed opacity-75"
                         />
-                        {!isEditMode && (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
-                            Auto-generated
-                          </span>
-                        )}
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                          {isEditMode ? 'Fixed' : 'Auto-generated'}
+                        </span>
                       </div>
                     </div>
 

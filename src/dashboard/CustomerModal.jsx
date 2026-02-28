@@ -67,7 +67,7 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit, user
       if (customerData.phone) {
         let query = supabase
           .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
           .eq('phone', customerData.phone)
         
@@ -86,7 +86,7 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit, user
       if (customerData.insta) {
         let query = supabase
           .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
           .eq('instagram', customerData.insta.toLowerCase())
         
@@ -105,7 +105,7 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit, user
       if (customerData.email) {
         let query = supabase
           .from('customers')
-          .select('id, name, phone, whatsapp, instagram, insta, email, address')
+          .select('id, name, phone, instagram, insta, email, address')
           .eq('user_id', user.id)
           .eq('email', customerData.email.toLowerCase())
         
@@ -181,13 +181,15 @@ const CustomerModal = ({ isOpen, onClose, onSave, onUpdate, customerToEdit, user
     const customerSaveData = {
       id: formData.id,
       customerId: formData.customerId,
+      user_id: user.id, // Add user_id for proper RLS and customer ownership
       name: formData.name,
-      phone: formData.phone,
-      insta: formData.insta,
+      phone: formData.phone || null,
+      insta: formData.insta || null,
+      instagram: formData.insta || null, // Also save to instagram field
       source: formData.source,
-      email: formData.email,
-      address: formData.address,
-      notes: formData.notes,
+      email: formData.email || null,
+      address: formData.address || null,
+      notes: formData.notes || null,
     }
     
     if (isEditMode) {
