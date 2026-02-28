@@ -73,7 +73,7 @@ const Feedback = () => {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
@@ -187,7 +187,7 @@ const Feedback = () => {
             <button
               type="submit"
               disabled={sending}
-              className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {sending ? (
                 <>
@@ -237,10 +237,10 @@ const Feedback = () => {
           </div> */}
 
           {/* Response Time */}
-          <div className="bg-gradient-to-br from-amber-900/20 to-orange-900/10 backdrop-blur-xl rounded-2xl border border-amber-500/20 p-6">
+          <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/10 backdrop-blur-xl rounded-2xl border border-indigo-500/20 p-6">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -255,12 +255,47 @@ const Feedback = () => {
           <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/50 backdrop-blur-xl rounded-2xl border border-white/5 p-6">
             <h4 className="font-semibold text-white mb-3">Other Ways to Reach Us</h4>
             <div className="space-y-3">
-              <a href="mailto:support@example.com" className="flex items-center gap-3 text-sm text-slate-400 hover:text-white transition-colors">
+              <a href="mailto:design2deploy.2025@gmail.com" className="flex items-center gap-3 text-sm text-slate-400 hover:text-white transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 Email Support (design2deploy.2025@gmail.com)
               </a>
+
+              <a 
+  href="https://www.instagram.com/_design2deploy_/" 
+  target="_blank" 
+  rel="noopener noreferrer"
+  className="flex items-center gap-3 text-sm text-slate-400 hover:text-white transition-colors"
+>
+  <svg 
+    className="w-4 h-4" 
+    fill="none" 
+    stroke="currentColor" 
+    viewBox="0 0 24 24"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth="2" 
+      d="M16 3h-8a5 5 0 00-5 5v8a5 5 0 005 5h8a5 5 0 005-5v-8a5 5 0 00-5-5z"
+    />
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth="2" 
+      d="M16 11.37a4 4 0 11-7.74 1.26 4 4 0 017.74-1.26z"
+    />
+    <line 
+      x1="17.5" 
+      y1="6.5" 
+      x2="17.5" 
+      y2="6.5" 
+      strokeWidth="2"
+    />
+  </svg>
+  Instagram (_design2deploy_)
+</a>
               {/* <div className="flex items-center gap-3 text-sm text-slate-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
