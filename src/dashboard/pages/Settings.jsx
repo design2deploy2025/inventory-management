@@ -323,18 +323,8 @@ const Settings = () => {
     <div className="min-h-screen bg-[#0A0A0A] p-6">
       {/* Profile Header Banner */}
       <div className="relative mb-8">
-        {/* Gradient Banner */}
-        <div className="h-48 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 relative overflow-hidden">
-          {/* Animated pattern overlay */}
-          <div className="absolute inset-0 opacity-30">
-            <div
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              }}
-            ></div>
-          </div>
-
+        {/* Solid Banner - matches form background */}
+        <div className="h-48 bg-gray-900/50 backdrop-blur-xl border border-white/5 relative overflow-hidden">
           {/* Content */}
           <div className="absolute inset-0 flex items-end p-8">
             <div className="flex items-end gap-6">
@@ -420,10 +410,6 @@ const Settings = () => {
               </div>
             </div>
           </div>
-
-          {/* Decorative elements */}
-          <div className="absolute top-4 right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-          <div className="absolute bottom-4 right-20 w-16 h-16 bg-pink-400/20 rounded-full blur-lg"></div>
         </div>
       </div>
 
