@@ -196,7 +196,7 @@ const OrdersLineChart = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="w-full bg-[#0A0A0A] border border-gray-800 rounded-xl p-6">
+      <div className="w-full bg-[#0A0A0A] border border-gray-800 p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="h-6 w-48 bg-gray-800 rounded animate-pulse"></div>
           <div className="h-8 w-32 bg-gray-800 rounded animate-pulse"></div>
@@ -207,7 +207,7 @@ const OrdersLineChart = () => {
   }
 
   return (
-    <div className="w-full bg-[#0A0A0A] border border-gray-800 rounded-xl p-6 shadow-xl">
+    <div className="w-full bg-[#0A0A0A] border border-gray-800 p-6 shadow-xl mb-10">
       {/* Header with Toggle */}
       <div className="flex justify-between items-center mb-6">
         <div>

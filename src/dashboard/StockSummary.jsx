@@ -114,7 +114,7 @@ const StockSummary = () => {
       <div className="mt-6">
         <div className="flex flex-col md:flex-row gap-5">
           {/* Low on Stock Skeleton */}
-          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-5 h-5 bg-gray-800 rounded animate-pulse"></div>
               <div className="h-5 w-24 bg-gray-800 rounded animate-pulse"></div>
@@ -134,7 +134,7 @@ const StockSummary = () => {
           </div>
 
           {/* Best Selling Skeleton */}
-          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+          <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-5 h-5 bg-gray-800 rounded animate-pulse"></div>
               <div className="h-5 w-28 bg-gray-800 rounded animate-pulse"></div>
@@ -165,7 +165,7 @@ const StockSummary = () => {
     <div className="mt-6">
       <div className="flex flex-col md:flex-row gap-5">
         {/* Low on Stock Products Box */}
-        <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+        <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <svg 
               className="shrink-0 size-5 text-red-500" 
@@ -221,7 +221,7 @@ const StockSummary = () => {
         </div>
 
         {/* Best Selling Products Box */}
-        <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm rounded-xl">
+        <div className="flex-1 p-4 md:p-5 bg-[#0A0A0A] border border-gray-800 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <svg 
               className="shrink-0 size-5 text-emerald-500" 
