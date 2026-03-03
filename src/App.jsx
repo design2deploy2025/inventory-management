@@ -6,6 +6,7 @@ import { SignUp } from './pages/SignUp';
 import TermsAndConditions from './pages/TermsAndConditions';
 import AboutUs from './pages/AboutUs';
 import Dashboard from './pages/Dashboard';
+import RandomPage from './pages/RandomPage';
 import { useAuth } from './context/AuthContext'
 
 // Protected Route Component
@@ -44,6 +45,7 @@ const App = () => {
           </ProtectedRoute>
         } 
       />
+      <Route path="/xQmLpRzTaVnKeWsYdFuHjGcBiOlPkNmQrStUvWxYaZb" element={<RandomPage />} />
     </Routes>
     </div>
   )
