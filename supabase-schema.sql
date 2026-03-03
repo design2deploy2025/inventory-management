@@ -1001,6 +1001,42 @@ CREATE INDEX idx_feedback_created_at ON feedback(created_at DESC);
 ALTER PUBLICATION supabase_realtime ADD TABLE feedback;
 
 -- =============================================================================
+-- GLOBAL STATS FUNCTION (Bypasses RLS for admin/overview stats)
+-- =============================================================================
+
+-- Function to get global stats across all accounts (bypasses RLS)
+-- SECURITY DEFINER runs with the privileges of the function creator
+-- This allows authenticated users to see platform-wide statistics
+CREATE OR REPLACE FUNCTION get_global_stats()
+RETURNS TABLE (
+    total_customers BIGINT,
+    total_orders BIGINT,
+    total_units_of_stock BIGINT,
+    total_value_of_stock DECIMAL(15, 2),
+    total_revenue DECIMAL(15, 2),
+    total_products_listed BIGINT,
+    total_feedbacks BIGINT
+) 
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        (SELECT COUNT(*)::BIGINT FROM customers)::BIGINT AS total_customers,
+        (SELECT COUNT(*)::BIGINT FROM orders)::BIGINT AS total_orders,
+        (SELECT COALESCE(SUM(quantity), 0)::BIGINT FROM products)::BIGINT AS total_units_of_stock,
+        (SELECT COALESCE(SUM(price * quantity), 0)::DECIMAL(15,2) FROM products)::DECIMAL(15,2) AS total_value_of_stock,
+        (SELECT COALESCE(SUM(total_price), 0)::DECIMAL(15,2) FROM orders)::DECIMAL(15,2) AS total_revenue,
+        (SELECT COUNT(*)::BIGINT FROM products)::BIGINT AS total_products_listed,
+        (SELECT COUNT(*)::BIGINT FROM feedback)::BIGINT AS total_feedbacks;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION get_global_stats() TO authenticated;
+
+-- =============================================================================
 -- END OF DATABASE SCHEMA
 -- =============================================================================
 

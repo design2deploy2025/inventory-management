@@ -1,12 +1,20 @@
-# Profile Page Redesign - Implementation Plan
+# TODO - RandomPage Stat Card Implementation
 
-## Steps to Complete:
+## Plan Approved
+- Update RandomPage.jsx to fetch and display global statistics from the database
 
-- [x] 1. Analyze current profile implementation (Settings.jsx, UserDetails.jsx)
-- [x] 2. Redesign Settings.jsx with professional UI
-- [x] 3. Add profile header with banner and stats
-- [x] 4. Implement glassmorphism card design
-- [x] 5. Add enhanced form fields with icons
-- [x] 6. Add smooth animations and transitions
-- [ ] 7. Test the implementation
+## Steps:
+- [x] 1. Add get_global_stats() function to supabase-schema.sql (bypasses RLS)
+- [x] 2. Update RandomPage.jsx to call the RPC function for global stats
+- [x] 3. Display 7 stat cards in a grid layout:
+      - Total Customers
+      - Total Orders
+      - Total Units of Stock
+      - Total Value of Stock
+      - Total Revenue
+      - Total Products Listed
+      - Total Feedbacks Submitted
+
+## Note:
+The get_global_stats() function uses SECURITY DEFINER to bypass RLS policies and fetch data across all accounts. You need to run the SQL function in your Supabase SQL Editor.
 
