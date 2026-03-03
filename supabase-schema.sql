@@ -269,20 +269,24 @@ CREATE POLICY "Users can delete their own orders"
     ON orders FOR DELETE
     USING (auth.uid() = user_id);
 
--- Auto-generate order number
+-- Auto-generate order number (with row-level lock to prevent race conditions)
 CREATE OR REPLACE FUNCTION set_order_number()
 RETURNS TRIGGER AS $$
 DECLARE
     next_num INTEGER;
     year_str TEXT;
+    existing_order RECORD;
 BEGIN
     year_str := TO_CHAR(NOW(), 'YY');
     
+    -- Use FOR UPDATE lock to prevent race conditions
+    -- This locks the existing rows for the user while finding the max order number
     SELECT COALESCE(MAX(
         CAST(SUBSTRING(order_number FROM 7 FOR 3) AS INTEGER)
     ), 0) + 1 INTO next_num
     FROM orders
-    WHERE user_id = NEW.user_id;
+    WHERE user_id = NEW.user_id
+    FOR UPDATE;
     
     NEW.order_number := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0');
     RETURN NEW;
