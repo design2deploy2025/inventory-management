@@ -1062,6 +1062,43 @@ $$ LANGUAGE plpgsql;
 GRANT EXECUTE ON FUNCTION get_global_stats() TO authenticated;
 
 -- =============================================================================
+-- GET ALL FEEDBACKS FUNCTION (Bypasses RLS for admin/overview)
+-- =============================================================================
+
+-- Function to get all feedbacks across all accounts (bypasses RLS)
+-- SECURITY DEFINER runs with the privileges of the function creator
+CREATE OR REPLACE FUNCTION get_all_feedbacks()
+RETURNS TABLE (
+    id UUID,
+    user_id UUID,
+    user_name TEXT,
+    subject TEXT,
+    category TEXT,
+    description TEXT,
+    created_at TIMESTAMPTZ
+) 
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        f.id,
+        f.user_id,
+        f.user_name,
+        f.subject,
+        f.category,
+        f.description,
+        f.created_at
+    FROM feedback f
+    ORDER BY f.created_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION get_all_feedbacks() TO authenticated;
+
+-- =============================================================================
 -- END OF DATABASE SCHEMA
 -- =============================================================================
 
