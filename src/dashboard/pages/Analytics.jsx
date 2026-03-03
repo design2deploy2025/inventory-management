@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import StatCards from '../StatCards'
 import TimePeriodStats from '../TimePeriodStats'
 import TopSellingProducts from '../TopSellingProducts'
+import OrdersLineChart from '../OrdersLineChart'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { FaDownload, FaSpinner } from 'react-icons/fa'
@@ -448,6 +449,9 @@ const Analytics = () => {
       </div>
       {/* <StatCards/> */}
       <TimePeriodStats/>
+      <div className='px-4 md:px-9'>
+        <OrdersLineChart/>
+      </div>
       <div className='px-9'>
       <TopSellingProducts/>
       </div>
