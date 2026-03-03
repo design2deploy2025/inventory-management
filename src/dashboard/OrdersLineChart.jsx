@@ -47,23 +47,20 @@ const OrdersLineChart = () => {
         }
       })
       
-      // Process monthly data (last 6 months)
-      const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-      const monthData = [0, 0, 0, 0, 0, 0] // Initialize for 6 months
+      // Process monthly data (last 12 months)
+      const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const monthData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] // Initialize for 12 months
       
-      // Get start of 6 months ago
-      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+      // Filter orders for the last 12 months (from 11 months ago to now)
+      const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
       
-      // Filter orders for last 6 months
+      // Filter orders for last 12 months
       orders?.forEach(order => {
         const orderDate = new Date(order.created_at)
-        if (orderDate >= sixMonthsAgo) {
-          const monthIndex = orderDate.getMonth()
-          // Map months to our 6-month window (current month to 5 months ago)
-          const monthsAgo = (now.getMonth() - monthIndex + 12) % 12
-          if (monthsAgo <= 5) {
-            monthData[5 - monthsAgo]++
-          }
+        if (orderDate >= twelveMonthsAgo) {
+          // Simply use the order's actual month (0-11) as the index
+          const orderMonth = orderDate.getMonth()
+          monthData[orderMonth]++
         }
       })
       
@@ -220,7 +217,7 @@ const OrdersLineChart = () => {
           <p className="text-sm text-gray-400 mt-1">
             {timeRange === 'week' 
               ? 'This week\'s order trend' 
-              : 'Last 6 months order trend'}
+              : 'Last 12 months order trend'}
           </p>
         </div>
         
