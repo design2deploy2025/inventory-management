@@ -230,7 +230,7 @@ CREATE TRIGGER set_customer_id_trigger
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    order_number TEXT UNIQUE NOT NULL,
+    order_number TEXT NOT NULL, -- Removed UNIQUE constraint to allow duplicate order numbers per user
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     customer_name TEXT NOT NULL,
     customer_phone TEXT,
@@ -275,20 +275,41 @@ RETURNS TRIGGER AS $$
 DECLARE
     next_num INTEGER;
     year_str TEXT;
-    existing_order RECORD;
+    new_order_num TEXT;
+    max_attempts INTEGER := 10;
+    attempt INTEGER := 0;
 BEGIN
     year_str := TO_CHAR(NOW(), 'YY');
     
-    -- Use FOR UPDATE lock to prevent race conditions
-    -- This locks the existing rows for the user while finding the max order number
-    SELECT COALESCE(MAX(
-        CAST(SUBSTRING(order_number FROM 7 FOR 3) AS INTEGER)
-    ), 0) + 1 INTO next_num
-    FROM orders
-    WHERE user_id = NEW.user_id
-    FOR UPDATE;
+    -- Retry loop to handle race conditions
+    LOOP
+        attempt := attempt + 1;
+        
+        -- Use FOR UPDATE lock to prevent race conditions
+        -- Lock all rows for this user to get the next number
+        SELECT COALESCE(MAX(
+            CAST(SUBSTRING(order_number FROM 7 FOR 3) AS INTEGER)
+        ), 0) + 1 INTO next_num
+        FROM orders
+        WHERE user_id = NEW.user_id
+        FOR UPDATE;
+        
+        new_order_num := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0');
+        
+        -- Check if this order_number already exists (in case of race condition)
+        IF NOT EXISTS (SELECT 1 FROM orders WHERE order_number = new_order_num AND user_id = NEW.user_id) THEN
+            NEW.order_number := new_order_num;
+            EXIT;
+        END IF;
+        
+        -- If we've tried too many times, exit with what we have
+        IF attempt >= max_attempts THEN
+            -- Fallback: use timestamp-based unique number
+            NEW.order_number := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0') || '-' || EXTRACT(EPOCH FROM NOW())::TEXT;
+            EXIT;
+        END IF;
+    END LOOP;
     
-    NEW.order_number := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

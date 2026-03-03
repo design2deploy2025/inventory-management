@@ -1,20 +1,24 @@
-# TODO - RandomPage Stat Card Implementation
+# TODO: Allow Duplicate Order Numbers Per User
 
-## Plan Approved
-- Update RandomPage.jsx to fetch and display global statistics from the database
+## Problem
+- Currently `order_number` in `orders` table has a GLOBAL unique constraint
+- This prevents different users from having the same order numbers (e.g., ORD-24-001)
 
-## Steps:
-- [x] 1. Add get_global_stats() function to supabase-schema.sql (bypasses RLS)
-- [x] 2. Update RandomPage.jsx to call the RPC function for global stats
-- [x] 3. Display 7 stat cards in a grid layout:
-      - Total Customers
-      - Total Orders
-      - Total Units of Stock
-      - Total Value of Stock
-      - Total Revenue
-      - Total Products Listed
-      - Total Feedbacks Submitted
+## Solution
+1. Remove UNIQUE constraint from `order_number` column in orders table
+2. Update auto-generation function to be per-user (already uses user_id)
+3. Frontend already fetches by user_id - no changes needed
 
-## Note:
-The get_global_stats() function uses SECURITY DEFINER to bypass RLS policies and fetch data across all accounts. You need to run the SQL function in your Supabase SQL Editor.
+## Steps
+- [x] 1. Create SQL migration to remove UNIQUE constraint from order_number
+- [x] 2. Verify frontend code works correctly (it already fetches by user_id)
+- [ ] 3. Run the migration in Supabase SQL Editor
+
+## Files Changed
+- `supabase-schema.sql` - Removed UNIQUE constraint from orders table
+- `migrations/allow_duplicate_order_numbers.sql` - Migration script for existing databases
+
+## Status
+- [x] COMPLETED - Code changes done
+- [ ] PENDING - Need to run migration in Supabase
 
