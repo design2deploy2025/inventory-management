@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
   const [formData, setFormData] = useState({
@@ -21,10 +21,17 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
   // Separate state for tags input (comma-separated string)
   const [tagsInput, setTagsInput] = useState('')
   
+  // Separate state for custom category input (when "Other" is selected)
+  const [customCategory, setCustomCategory] = useState('')
+  
+  // Dropdown state
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const categoryRef = useRef(null)
+  
   const [uploadedFile, setUploadedFile] = useState(null)
   const [imagePreview, setImagePreview] = useState('')
 
-  // Categories for dropdown
+  // Categories for dropdown (common categories - users can also type custom)
   const categories = [
     'Electronics',
     'Clothing',
@@ -36,6 +43,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
     'Automotive',
     'Food & Beverages',
     'Office Supplies',
+    'Accessories',
     'Other',
   ]
 
@@ -46,6 +54,10 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
       const tagsString = Array.isArray(product.tags) 
         ? product.tags.join(', ') 
         : ''
+      
+      // Check if the category is one of the predefined categories
+      const predefinedCategories = categories.slice(0, -1) // All except "Other"
+      const isCustomCategory = product.category && !predefinedCategories.includes(product.category)
       
       setFormData({
         id: product.id || '',
@@ -64,6 +76,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
         isNew: product.isNew !== undefined ? product.isNew : !product.id,
       })
       setTagsInput(tagsString)
+      setCustomCategory(isCustomCategory ? product.category : '')
       // Set image preview from product data
       if (product.imageSrc) {
         setImagePreview(product.imageSrc)
@@ -73,12 +86,45 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
     }
   }, [product])
 
+  // Click outside handler to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
+        setIsCategoryOpen(false)
+      }
+    }
+    
+    if (isCategoryOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isCategoryOpen])
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target
+    
+    // When "Other" is selected, clear the custom category
+    if (name === 'category' && value !== 'Other') {
+      setCustomCategory('')
+    }
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }))
+  }
+
+  // Handle custom category input change
+  const handleCustomCategoryChange = (e) => {
+    const value = e.target.value
+    setCustomCategory(value)
+    setFormData((prev) => ({
+      ...prev,
+      category: value,
     }))
   }
 
@@ -271,19 +317,64 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                     <label className="block text-sm font-medium text-slate-400 mb-2">
                       Category
                     </label>
-                    <select
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                    >
-                      <option value="">Select category</option>
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative" ref={categoryRef}>
+                      {/* Custom Dropdown Button */}
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between"
+                      >
+                        <span className={formData.category ? 'text-white' : 'text-slate-500'}>
+                          {formData.category || 'Select a category'}
+                        </span>
+                        <svg 
+                          className={`w-5 h-5 text-slate-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      {isCategoryOpen && (
+                        <div className="absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                          {categories.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, category: cat }))
+                                if (cat !== 'Other') {
+                                  setCustomCategory('')
+                                }
+                                setIsCategoryOpen(false)
+                              }}
+                              className="block w-full px-4 py-2.5 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors first:rounded-t-lg last:rounded-b-lg"
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Custom category input when "Other" is selected */}
+                    {formData.category === 'Other' && (
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          value={customCategory}
+                          onChange={handleCustomCategoryChange}
+                          placeholder="Enter custom category"
+                          className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                        />
+                      </div>
+                    )}
+                    <p className="mt-1 text-xs text-slate-500">
+                      Choose from the list or select "Other" to add custom
+                    </p>
                   </div>
                 </div>
 

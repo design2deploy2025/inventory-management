@@ -44,21 +44,13 @@ CREATE TYPE product_status AS ENUM (
     'Discontinued'
 );
 
--- Product category enum
-CREATE TYPE product_category AS ENUM (
-    'Electronics',
-    'Clothing',
-    'Home & Garden',
-    'Sports & Outdoors',
-    'Books',
-    'Toys & Games',
-    'Health & Beauty',
-    'Automotive',
-    'Food & Beverages',
-    'Office Supplies',
-    'Accessories',
-    'Other'
-);
+-- Product category - now TEXT to allow custom categories
+-- Previously was enum: 
+-- CREATE TYPE product_category AS ENUM (
+--     'Electronics', 'Clothing', 'Home & Garden', 'Sports & Outdoors',
+--     'Books', 'Toys & Games', 'Health & Beauty', 'Automotive',
+--     'Food & Beverages', 'Office Supplies', 'Accessories', 'Other'
+-- );
 
 -- =============================================================================
 -- PROFILES TABLE (Extends Supabase Auth)
@@ -120,7 +112,7 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     description TEXT,
-    category product_category DEFAULT 'Other',
+    category TEXT DEFAULT 'Other',
     quantity INTEGER DEFAULT 0,
     sku TEXT UNIQUE,
     status product_status DEFAULT 'Active',
