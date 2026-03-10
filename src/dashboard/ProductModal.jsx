@@ -86,12 +86,16 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
     }
   }, [product])
 
-  // Click outside handler to close dropdown
+  // Click outside handler to close dropdown (but not when typing in custom category input)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (categoryRef.current && !categoryRef.current.contains(event.target)) {
-        setIsCategoryOpen(false)
+      // Don't close if clicking inside the category dropdown component (including custom input)
+      if (categoryRef.current && categoryRef.current.contains(event.target)) {
+        return
       }
+      
+      // Close dropdown when clicking outside
+      setIsCategoryOpen(false)
     }
     
     if (isCategoryOpen) {
@@ -122,10 +126,8 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
   const handleCustomCategoryChange = (e) => {
     const value = e.target.value
     setCustomCategory(value)
-    setFormData((prev) => ({
-      ...prev,
-      category: value,
-    }))
+    // Don't update formData.category here - keep it as "Other" while typing
+    // This prevents the input field from disappearing after typing the first letter
   }
 
   // Handle tags input change
@@ -158,8 +160,13 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
 
   // Handle save
   const handleSave = () => {
+    // If category is "Other", use the customCategory value
+    const categoryToSave = formData.category === 'Other' && customCategory 
+      ? customCategory 
+      : formData.category
+    
     if (onSave) {
-      onSave({ ...formData, uploadedFile })
+      onSave({ ...formData, category: categoryToSave, uploadedFile })
     }
     onClose()
   }
@@ -325,7 +332,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                         className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between"
                       >
                         <span className={formData.category ? 'text-white' : 'text-slate-500'}>
-                          {formData.category || 'Select a category'}
+                          {formData.category === 'Other' && customCategory 
+                            ? customCategory 
+                            : formData.category || 'Select a category'}
                         </span>
                         <svg 
                           className={`w-5 h-5 text-slate-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} 
@@ -337,9 +346,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                         </svg>
                       </button>
                       
-                      {/* Dropdown Menu */}
+                      {/* Dropdown Menu - opens above */}
                       {isCategoryOpen && (
-                        <div className="absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                        <div className="category-dropdown-menu absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                           {categories.map((cat) => (
                             <button
                               key={cat}
@@ -348,8 +357,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                                 setFormData((prev) => ({ ...prev, category: cat }))
                                 if (cat !== 'Other') {
                                   setCustomCategory('')
+                                  setIsCategoryOpen(false)
                                 }
-                                setIsCategoryOpen(false)
+                                // Don't close dropdown when "Other" is selected - let user type custom category
                               }}
                               className="block w-full px-4 py-2.5 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors first:rounded-t-lg last:rounded-b-lg"
                             >
@@ -358,20 +368,20 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                           ))}
                         </div>
                       )}
+
+                      {/* Custom category input when "Other" is selected - INSIDE the ref wrapper */}
+                      {formData.category === 'Other' && (
+                        <div className="mt-2 custom-category-input">
+                          <input
+                            type="text"
+                            value={customCategory}
+                            onChange={handleCustomCategoryChange}
+                            placeholder="Enter custom category"
+                            className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                          />
+                        </div>
+                      )}
                     </div>
-                    
-                    {/* Custom category input when "Other" is selected */}
-                    {formData.category === 'Other' && (
-                      <div className="mt-2">
-                        <input
-                          type="text"
-                          value={customCategory}
-                          onChange={handleCustomCategoryChange}
-                          placeholder="Enter custom category"
-                          className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                        />
-                      </div>
-                    )}
                     <p className="mt-1 text-xs text-slate-500">
                       Choose from the list or select "Other" to add custom
                     </p>
