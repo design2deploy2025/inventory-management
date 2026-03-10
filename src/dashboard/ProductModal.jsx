@@ -331,7 +331,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                       <button
                         type="button"
                         onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                        className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-left text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between"
+                        className={`block w-full px-3 py-2 bg-gray-900 border rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between ${
+                          isCategoryOpen ? 'border-indigo-500' : 'border-gray-700'
+                        }`}
                       >
                         <span className={formData.category ? 'text-white' : 'text-slate-500'}>
                           {formData.category === 'Other' && customCategory 
@@ -348,44 +350,75 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                         </svg>
                       </button>
                       
-                      {/* Dropdown Menu - opens above */}
-                      {isCategoryOpen && (
+                      {/* Dropdown Menu - only show when NOT in "Other" mode or when Other is selected but dropdown is focused */}
+                      {isCategoryOpen && formData.category !== 'Other' && (
                         <div className="category-dropdown-menu absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                          {categories.map((cat) => (
+                          {categories.filter(cat => cat !== 'Other').map((cat) => (
                             <button
                               key={cat}
                               type="button"
                               onClick={() => {
                                 setFormData((prev) => ({ ...prev, category: cat }))
-                                if (cat !== 'Other') {
-                                  setCustomCategory('')
-                                  setIsCategoryOpen(false)
-                                }
-                                // Don't close dropdown when "Other" is selected - let user type custom category
+                                setCustomCategory('')
+                                setIsCategoryOpen(false)
                               }}
-                              className="block w-full px-4 py-2.5 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors first:rounded-t-lg last:rounded-b-lg"
+                              className={`block w-full px-4 py-2.5 text-left transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                                formData.category === cat 
+                                  ? 'bg-indigo-600 text-white' 
+                                  : 'text-white hover:bg-indigo-600 hover:text-white'
+                              }`}
                             >
                               {cat}
                             </button>
                           ))}
+                          {/* Other option at the bottom */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, category: 'Other' }))
+                              setIsCategoryOpen(false)
+                            }}
+                            className="block w-full px-4 py-2.5 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors rounded-b-lg border-t border-gray-700"
+                          >
+                            Other (Custom)
+                          </button>
                         </div>
                       )}
 
-                      {/* Custom category input when "Other" is selected - INSIDE the ref wrapper */}
+                      {/* Custom category input when "Other" is selected */}
                       {formData.category === 'Other' && (
                         <div className="mt-2 custom-category-input">
-                          <input
-                            type="text"
-                            value={customCategory}
-                            onChange={handleCustomCategoryChange}
-                            placeholder="Enter custom category"
-                            className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={customCategory}
+                              onChange={handleCustomCategoryChange}
+                              placeholder="Enter custom category"
+                              className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                              autoFocus
+                            />
+                            {customCategory && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCustomCategory('')
+                                  setFormData((prev) => ({ ...prev, category: '' }))
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      Choose from the list or select "Other" to add custom
+                      {formData.category === 'Other' 
+                        ? 'Enter a custom category name above' 
+                        : 'Choose from the list or select "Other" to add custom'}
                     </p>
                   </div>
                 </div>
