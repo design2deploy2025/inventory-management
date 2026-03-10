@@ -160,10 +160,12 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
 
   // Handle save
   const handleSave = () => {
-    // If category is "Other", use the customCategory value
-    const categoryToSave = formData.category === 'Other' && customCategory 
-      ? customCategory 
-      : formData.category
+    // If category is "Other", use the customCategory value if provided
+    // Otherwise keep "Other" as the category
+    let categoryToSave = formData.category
+    if (formData.category === 'Other') {
+      categoryToSave = customCategory.trim() || 'Other'
+    }
     
     if (onSave) {
       onSave({ ...formData, category: categoryToSave, uploadedFile })
