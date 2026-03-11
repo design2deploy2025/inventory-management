@@ -31,7 +31,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     orderStatus: 'Pending',
     selectedProducts: [],
     notes: '',
-    source: 'WhatsApp',
+    source: 'Instagram',
   })
 
   // Customer search dropdown state
@@ -105,6 +105,29 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     ) // Show all matching results (no limit)
   }, [customers, customerSearchQuery])
 
+  // Handle escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
   // Click outside handler for customer dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -141,7 +164,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           orderStatus: orderToEdit.orderStatus || 'Pending',
           selectedProducts: orderToEdit.products || [],
           notes: orderToEdit.notes || '',
-          source: orderToEdit.source || 'WhatsApp',
+          source: orderToEdit.source || 'Instagram',
         })
         setCustomerSearchQuery(orderToEdit.customerName || '')
       } else {
@@ -159,7 +182,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           orderStatus: 'Pending',
           selectedProducts: [],
           notes: '',
-          source: 'WhatsApp',
+          source: 'Instagram',
         })
         setCustomerSearchQuery('')
         setSelectedCustomerId(null)
@@ -504,7 +527,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       orderStatus: 'Pending',
       selectedProducts: [],
       notes: '',
-      source: 'WhatsApp',
+      source: 'Instagram',
     })
     setCustomerSearchQuery('')
     setSelectedCustomerId(null)
@@ -515,17 +538,26 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+      {/* Backdrop with fade animation */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ease-out"
         onClick={onClose}
+        style={{
+          opacity: isOpen ? 1 : 0,
+        }}
       />
 
-      {/* Modal container */}
+      {/* Modal container with scale and fade animation */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-5xl bg-[#0A0A0A] border border-gray-800 rounded-2xl shadow-2xl transform transition-all max-h-[90vh] flex flex-col">
+        <div 
+          className="relative w-full max-w-7xl bg-[#0A0A0A] border border-gray-800 rounded-2xl shadow-2xl transform transition-all duration-300 ease-out max-h-[92vh] flex flex-col"
+          style={{
+            opacity: isOpen ? 1 : 0,
+            scale: isOpen ? 1 : 0.95,
+          }}
+        >
           {/* Modal header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/50">
             <div>
               <h2 className="text-xl font-semibold text-white">
                 {isEditMode ? 'Edit Order' : 'Create New Order'}
@@ -536,7 +568,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2.5 text-slate-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all duration-200 hover:rotate-90"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -546,9 +578,9 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
 
           {/* Modal body */}
           <div className="px-6 py-4 overflow-y-auto flex-1">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
               {/* Left column - Order & Customer Info */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="xl:col-span-3 space-y-6">
                 {/* Order Details Card */}
                 <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
                   <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
@@ -853,69 +885,93 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                     </div>
                   ) : (
                     <>
-                      {/* Available Products */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  {/* Available Products - 3 column grid for better visibility */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                         {products.map((product) => {
                           const isSelected = formData.selectedProducts.some((p) => p.id === product.id || p.id === product.id)
                           return (
                             <div
                               key={product.id}
                               onClick={() => handleProductToggle(product)}
-                              className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                              className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 hover:shadow-lg ${
                                 isSelected
-                                  ? 'bg-indigo-500/10 border-indigo-500/50'
-                                  : 'bg-gray-900 border-gray-700 hover:border-gray-600'
+                                  ? 'bg-indigo-500/10 border-indigo-500/50 shadow-indigo-500/20'
+                                  : 'bg-gray-900 border-gray-700 hover:border-gray-500 hover:bg-gray-800/50'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-5 h-5 rounded border flex items-center justify-center ${
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className={`w-6 h-6 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
                                     isSelected
                                       ? 'bg-indigo-600 border-indigo-600'
-                                      : 'border-gray-600'
+                                      : 'border-gray-600 group-hover:border-gray-500'
                                   }`}>
                                     {isSelected && (
-                                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                       </svg>
                                     )}
                                   </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-white">{product.name}</p>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-white truncate">{product.name}</p>
                                     <p className="text-xs text-slate-400">{product.category}</p>
                                   </div>
                                 </div>
-                                <span className="text-sm font-semibold text-white">₹{product.price}</span>
+                                <span className="text-sm font-bold text-white flex-shrink-0">₹{product.price}</span>
                               </div>
                             </div>
                           )
                         })}
                       </div>
 
-                      {/* Selected Products List */}
+                      {/* Selected Products List - Enhanced with better spacing */}
                       {formData.selectedProducts.length > 0 && (
                         <div className="border-t border-gray-700 pt-4 mt-4">
-                          <h4 className="text-sm font-medium text-white mb-3">Selected Products</h4>
+                          <h4 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                            <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Selected Products ({formData.selectedProducts.length})
+                          </h4>
                           <div className="space-y-3">
                             {formData.selectedProducts.map((product) => (
                               <div
                                 key={product.id}
-                                className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg border border-gray-700"
+                                className="flex items-center gap-4 p-4 bg-gray-900/80 rounded-xl border border-gray-700 hover:border-gray-600 transition-colors duration-200"
                               >
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-white">{product.name}</p>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-white truncate">{product.name}</p>
+                                  <p className="text-xs text-slate-400">₹{product.price} each</p>
                                 </div>
                                 
                                 {/* Quantity */}
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs text-slate-400">Qty:</span>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={product.quantity}
-                                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                    className="w-16 px-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                  />
+                                  <div className="flex items-center bg-gray-800 rounded-lg border border-gray-600">
+                                    <button
+                                      onClick={() => handleQuantityChange(product.id, product.quantity - 1)}
+                                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-l-lg transition-colors"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                                      </svg>
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min="1"
+                                      value={product.quantity}
+                                      onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                      className="w-12 px-1 py-1 text-sm bg-transparent border-x border-gray-600 rounded-none text-white text-center focus:outline-none focus:ring-0"
+                                    />
+                                    <button
+                                      onClick={() => handleQuantityChange(product.id, product.quantity + 1)}
+                                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-r-lg transition-colors"
+                                    >
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                      </svg>
+                                    </button>
+                                  </div>
                                 </div>
 
                                 {/* Price Override */}
@@ -929,14 +985,14 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                                       step="0.01"
                                       value={product.price}
                                       onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                                      className="w-20 pl-5 pr-2 py-1 text-sm bg-gray-800 border border-gray-600 rounded text-white text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      className="w-20 pl-5 pr-2 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                                     />
                                   </div>
                                 </div>
 
                                 {/* Line Total */}
-                                <div className="text-right min-w-[80px]">
-                                  <p className="text-sm font-semibold text-white">
+                                <div className="text-right min-w-[90px]">
+                                  <p className="text-sm font-bold text-white">
                                     ₹{(product.price * product.quantity).toFixed(2)}
                                   </p>
                                 </div>
@@ -944,10 +1000,11 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                                 {/* Remove */}
                                 <button
                                   onClick={() => handleRemoveProduct(product.id)}
-                                  className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                                  title="Remove product"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
                               </div>
@@ -961,10 +1018,10 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
               </div>
 
               {/* Right column - Order Summary */}
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Order Summary Card */}
-                <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800 sticky top-4">
-                  <h3 className="text-sm font-medium text-white mb-4 flex items-center gap-2">
+                <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-800 sticky top-4">
+                  <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
                     <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
@@ -973,44 +1030,48 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
 
                   {/* Summary Details */}
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
                       <span className="text-slate-400">Order ID:</span>
-                      <span className="text-white font-mono">{formData.orderId || 'N/A'}</span>
+                      <span className="text-white font-mono text-xs bg-gray-800 px-2 py-1 rounded">{formData.orderId || 'N/A'}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
                       <span className="text-slate-400">Items:</span>
-                      <span className="text-white">{formData.selectedProducts.reduce((acc, p) => acc + p.quantity, 0)}</span>
+                      <span className="text-white font-medium">{formData.selectedProducts.reduce((acc, p) => acc + p.quantity, 0)}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
                       <span className="text-slate-400">Payment:</span>
                       <span className="text-white">{formData.paymentType}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-700/50">
                       <span className="text-slate-400">Status:</span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        formData.orderStatus === 'Completed' ? 'bg-emerald-500/10 text-emerald-400' :
-                        formData.orderStatus === 'Pending' ? 'bg-yellow-500/10 text-yellow-400' :
-                        formData.orderStatus === 'Processing' ? 'bg-blue-500/10 text-blue-400' :
-                        formData.orderStatus === 'Cancelled' ? 'bg-red-500/10 text-red-400' :
-                        'bg-gray-500/10 text-gray-400'
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${
+                        formData.orderStatus === 'Completed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                        formData.orderStatus === 'Pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                        formData.orderStatus === 'Processing' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                        formData.orderStatus === 'Cancelled' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                        'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                       }`}>
                         {formData.orderStatus}
                       </span>
                     </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-slate-400">Source:</span>
+                      <span className="text-white">{formData.source}</span>
+                    </div>
                   </div>
 
                   {/* Total Price */}
-                  <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="mt-5 pt-5 border-t border-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="text-base font-medium text-white">Total</span>
-                      <span className="text-2xl font-bold text-white">
+                      <span className="text-lg font-medium text-white">Total</span>
+                      <span className="text-3xl font-bold text-white tracking-tight">
                         ₹{calculateTotal().toFixed(2)}
                       </span>
                     </div>
                   </div>
 
                   {/* Notes */}
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <label className="block text-sm font-medium text-slate-400 mb-2">
                       Order Notes
                     </label>
@@ -1020,7 +1081,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                       onChange={handleChange}
                       rows={3}
                       placeholder="Add any special instructions..."
-                      className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-sm"
+                      className="block w-full px-3 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-sm"
                     />
                   </div>
                 </div>
@@ -1029,17 +1090,17 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
           </div>
 
           {/* Modal footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-800 bg-gray-900/30">
+          <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-800 bg-gray-900/30">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-gray-900 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
+              className="px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white bg-gray-900 border border-gray-700 rounded-xl hover:border-gray-500 hover:bg-gray-800 transition-all duration-200"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={!formData.customerName || formData.selectedProducts.length === 0}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+              className="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-indigo-600 disabled:hover:to-indigo-700 disabled:hover:shadow-lg disabled:hover:shadow-indigo-500/25"
             >
               {isEditMode ? 'Update Order' : 'Create Order'}
             </button>
