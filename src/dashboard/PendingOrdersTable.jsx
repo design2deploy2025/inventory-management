@@ -215,7 +215,9 @@ const PendingOrdersTable = () => {
         products: orderData.products,
         source: orderData.source || 'WhatsApp',
         invoice_date: new Date().toISOString().split('T')[0],
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        // Include custom order number if provided (DB trigger will use it or auto-generate)
+        ...(orderData.customOrderNumber && { order_number: orderData.customOrderNumber })
       }
 
       const { data, error } = await supabase
