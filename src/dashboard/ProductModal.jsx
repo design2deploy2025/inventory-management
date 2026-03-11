@@ -197,11 +197,11 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
 
       {/* Modal container */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl bg-[#0A0A0A] border border-gray-800 rounded-2xl shadow-2xl transform transition-all">
+<div className="relative w-full max-w-7xl bg-[#0A0A0A] border border-gray-800 rounded-2xl shadow-2xl transform transition-all">
           {/* Modal header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between px-8 py-5 border-b border-gray-800">
             <div>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-2xl font-semibold text-white">
                 {formData.isNew ? 'Add Product' : 'Edit Product'}
               </h2>
               <p className="text-sm text-slate-400 mt-1">
@@ -219,9 +219,9 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
           </div>
 
           {/* Modal body */}
-          <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left column - Image and basic info */}
+          <div className="px-8 py-6 max-h-[65vh] overflow-y-auto">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* Column 1 - Image and Basic Info */}
               <div className="space-y-6">
                 {/* Image preview */}
                 <div>
@@ -243,7 +243,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                   <div className="mt-3">
                     <label
                       htmlFor="image-upload"
-                      className="flex items-center justify-center px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white cursor-pointer hover:bg-gray-800 hover:border-gray-600 transition-colors"
+                      className="flex items-center justify-center px-4 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white cursor-pointer hover:bg-gray-800 hover:border-gray-600 transition-colors"
                     >
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -276,13 +276,13 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Enter product name"
-                    className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="block w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                   />
                 </div>
 
                 {/* Price and Quantity */}
                 <div className="grid grid-cols-2 gap-4">
-                    <div>
+                  <div>
                     <label className="block text-sm font-medium text-slate-400 mb-2">
                       Price *
                     </label>
@@ -294,7 +294,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                         value={formData.price.replace(/[₹$]/g, '')}
                         onChange={handleChange}
                         placeholder="0.00"
-                        className="block w-full pl-8 pr-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                        className="block w-full pl-8 pr-3 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                       />
                     </div>
                   </div>
@@ -309,162 +309,8 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                       onChange={handleChange}
                       placeholder="0"
                       min="0"
-                      className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                      className="block w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                     />
-                  </div>
-                </div>
-
-                {/* SKU and Category */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      SKU {!formData.isNew && formData.sku && <span className="text-xs text-slate-500">(Auto-generated)</span>}
-                      {useCustomSku && formData.sku && <span className="text-xs text-indigo-400">(Custom)</span>}
-                      {useCustomSku && !formData.sku && formData.isNew && <span className="text-xs text-indigo-400">(Custom - Enter below)</span>}
-                    </label>
-                    
-                    {/* Custom SKU Toggle */}
-                    {formData.isNew && (
-                      <div className="mb-2">
-                        <label className="flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={useCustomSku}
-                            onChange={(e) => {
-                              setUseCustomSku(e.target.checked)
-                              if (!e.target.checked) {
-                                setFormData((prev) => ({ ...prev, sku: '' }))
-                              }
-                            }}
-                            className="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-700 rounded focus:ring-indigo-500 focus:ring-2"
-                          />
-                          <span className="ml-2 text-xs text-slate-400">Set custom SKU</span>
-                        </label>
-                      </div>
-                    )}
-                    
-                    <input
-                      type="text"
-                      name="sku"
-                      value={formData.sku || ''}
-                      onChange={handleChange}
-                      readOnly={!useCustomSku && formData.isNew}
-                      disabled={!useCustomSku && formData.isNew}
-                      placeholder={!useCustomSku && formData.isNew ? 'SKU will be auto-generated' : 'Enter custom SKU (e.g., MY-SKU-001)'}
-                      className={`block w-full px-3 py-2 bg-gray-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                        useCustomSku || !formData.isNew 
-                          ? 'border-gray-700' 
-                          : 'border-gray-800 text-slate-400 cursor-not-allowed'
-                      }`}
-                    />
-                    {!formData.isNew && formData.sku && (
-                      <p className="mt-1 text-xs text-slate-500">SKU can be modified</p>
-                    )}
-                    {formData.isNew && !useCustomSku && (
-                      <p className="mt-1 text-xs text-slate-500">SKU will be auto-generated after save</p>
-                    )}
-                    {formData.isNew && useCustomSku && (
-                      <p className="mt-1 text-xs text-indigo-400">Enter your own SKU format</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">
-                      Category
-                    </label>
-                    <div className="relative" ref={categoryRef}>
-                      {/* Custom Dropdown Button */}
-                      <button
-                        type="button"
-                        onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                        className={`block w-full px-3 py-2 bg-gray-900 border rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between ${
-                          isCategoryOpen ? 'border-indigo-500' : 'border-gray-700'
-                        }`}
-                      >
-                        <span className={formData.category ? 'text-white' : 'text-slate-500'}>
-                          {formData.category === 'Other' && customCategory 
-                            ? customCategory 
-                            : formData.category || 'Select a category'}
-                        </span>
-                        <svg 
-                          className={`w-5 h-5 text-slate-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      
-                      {/* Dropdown Menu - only show when NOT in "Other" mode or when Other is selected but dropdown is focused */}
-                      {isCategoryOpen && formData.category !== 'Other' && (
-                        <div className="category-dropdown-menu absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
-                          {categories.filter(cat => cat !== 'Other').map((cat) => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={() => {
-                                setFormData((prev) => ({ ...prev, category: cat }))
-                                setCustomCategory('')
-                                setIsCategoryOpen(false)
-                              }}
-                              className={`block w-full px-4 py-2.5 text-left transition-colors first:rounded-t-lg last:rounded-b-lg ${
-                                formData.category === cat 
-                                  ? 'bg-indigo-600 text-white' 
-                                  : 'text-white hover:bg-indigo-600 hover:text-white'
-                              }`}
-                            >
-                              {cat}
-                            </button>
-                          ))}
-                          {/* Other option at the bottom */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData((prev) => ({ ...prev, category: 'Other' }))
-                              setIsCategoryOpen(false)
-                            }}
-                            className="block w-full px-4 py-2.5 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors rounded-b-lg border-t border-gray-700"
-                          >
-                            Other (Custom)
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Custom category input when "Other" is selected */}
-                      {formData.category === 'Other' && (
-                        <div className="mt-2 custom-category-input">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={customCategory}
-                              onChange={handleCustomCategoryChange}
-                              placeholder="Enter custom category"
-                              className="block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                              autoFocus
-                            />
-                            {customCategory && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCustomCategory('')
-                                  setFormData((prev) => ({ ...prev, category: '' }))
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {formData.category === 'Other' 
-                        ? 'Enter a custom category name above' 
-                        : 'Choose from the list or select "Other" to add custom'}
-                    </p>
                   </div>
                 </div>
 
@@ -473,7 +319,7 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                   <label className="block text-sm font-medium text-slate-400 mb-2">
                     Status
                   </label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-4">
                     <label className="flex items-center">
                       <input
                         type="radio"
@@ -511,64 +357,175 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                 </div>
               </div>
 
-              {/* Right column - Description and additional info */}
+              {/* Column 2 - SKU and Category */}
               <div className="space-y-6">
-                {/* Description */}
+                {/* SKU */}
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">
-                    Description
+                    SKU {!formData.isNew && formData.sku && <span className="text-xs text-slate-500">(Auto-generated)</span>}
+                    {useCustomSku && formData.sku && <span className="text-xs text-indigo-400">(Custom)</span>}
+                    {useCustomSku && !formData.sku && formData.isNew && <span className="text-xs text-indigo-400">(Custom - Enter below)</span>}
                   </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
+                  
+                  {/* Custom SKU Toggle */}
+                  {formData.isNew && (
+                    <div className="mb-3">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useCustomSku}
+onChange={(e) => {
+                            setUseCustomSku(e.target.checked)
+                            if (!e.target.checked) {
+                              setFormData((prev) => ({ ...prev, sku: '' }))
+                            }
+                          }}
+                          className="w-4 h-4 text-indigo-600 bg-gray-900 border-gray-700 rounded focus:ring-indigo-500 focus:ring-2"
+                        />
+                        <span className="ml-2 text-xs text-slate-400">Set custom SKU</span>
+                      </label>
+                    </div>
+                  )}
+                  
+                  <input
+                    type="text"
+                    name="sku"
+                    value={formData.sku || ''}
                     onChange={handleChange}
-                    rows={6}
-                    placeholder="Enter product description..."
-                    className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
+                    readOnly={!useCustomSku && formData.isNew}
+                    disabled={!useCustomSku && formData.isNew}
+                    placeholder={!useCustomSku && formData.isNew ? 'SKU will be auto-generated' : 'Enter custom SKU (e.g., MY-SKU-001)'}
+                    className={`block w-full px-4 py-3 bg-gray-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
+                      useCustomSku || !formData.isNew
+                        ? 'border-gray-700' 
+                        : 'border-gray-800 text-slate-400 cursor-not-allowed'
+                    }`}
                   />
+                  {!formData.isNew && formData.sku && (
+                    <p className="mt-1 text-xs text-slate-500">SKU can be modified</p>
+                  )}
+                  {formData.isNew && !useCustomSku && (
+                    <p className="mt-1 text-xs text-slate-500">SKU will be auto-generated after save</p>
+                  )}
+                  {formData.isNew && useCustomSku && (
+                    <p className="mt-1 text-xs text-indigo-400">Enter your own SKU format</p>
+                  )}
                 </div>
 
-                {/* Additional Info Card */}
-                <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800">
-                  <h4 className="text-sm font-medium text-white mb-3">Product Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Product ID:</span>
-                      <span className="text-white font-mono">#{formData.id || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Created:</span>
-                      <span className="text-white">{new Date().toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Last Modified:</span>
-                      <span className="text-white">{new Date().toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Stock Value:</span>
-                      <span className="text-white">
-                        {formData.price && formData.quantity
-                          ? `₹${(parseFloat(formData.price.replace(/[₹$]/g, '')) * parseInt(formData.quantity)).toFixed(2)}`
-                          : '₹0.00'}
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Category
+                  </label>
+                  <div className="relative" ref={categoryRef}>
+                    {/* Custom Dropdown Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                      className={`block w-full px-4 py-3 bg-gray-900 border rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors flex items-center justify-between ${
+                        isCategoryOpen ? 'border-indigo-500' : 'border-gray-700'
+                      }`}
+                    >
+                      <span className={formData.category ? 'text-white' : 'text-slate-500'}>
+                        {formData.category === 'Other' && customCategory 
+                          ? customCategory 
+                          : formData.category || 'Select a category'}
                       </span>
-                    </div>
+                      <svg 
+                        className={`w-5 h-5 text-slate-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {isCategoryOpen && formData.category !== 'Other' && (
+                      <div className="category-dropdown-menu absolute z-10 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                        {categories.filter(cat => cat !== 'Other').map((cat) => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, category: cat }))
+                              setCustomCategory('')
+                              setIsCategoryOpen(false)
+                            }}
+                            className={`block w-full px-4 py-3 text-left transition-colors first:rounded-t-lg last:rounded-b-lg ${
+                              formData.category === cat 
+                                ? 'bg-indigo-600 text-white' 
+                                : 'text-white hover:bg-indigo-600 hover:text-white'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData((prev) => ({ ...prev, category: 'Other' }))
+                            setIsCategoryOpen(false)
+                          }}
+                          className="block w-full px-4 py-3 text-left text-white hover:bg-indigo-600 hover:text-white transition-colors rounded-b-lg border-t border-gray-700"
+                        >
+                          Other (Custom)
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Custom category input when "Other" is selected */}
+                    {formData.category === 'Other' && (
+                      <div className="mt-2 custom-category-input">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={customCategory}
+                            onChange={handleCustomCategoryChange}
+                            placeholder="Enter custom category"
+                            className="block w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                            autoFocus
+                          />
+                          {customCategory && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCustomCategory('')
+                                setFormData((prev) => ({ ...prev, category: '' }))
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formData.category === 'Other' 
+                      ? 'Enter a custom category name above' 
+                      : 'Choose from the list or select "Other" to add custom'}
+                  </p>
                 </div>
 
                 {/* Total Items Sold - Read Only */}
-                <div className="bg-indigo-900/20 rounded-xl p-4 border border-indigo-500/30">
+                <div className="bg-indigo-900/20 rounded-xl p-5 border border-indigo-500/30">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-medium text-indigo-300">Total Items Sold</h4>
                       <p className="text-xs text-slate-400 mt-1">Read-only - fetched from database</p>
                     </div>
-                    <div className="text-2xl font-bold text-indigo-400">
+                    <div className="text-3xl font-bold text-indigo-400">
                       {formData.totalSold?.toLocaleString() || 0}
                     </div>
                   </div>
                 </div>
 
-                {/* Tags (optional) */}
+                {/* Tags */}
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-2">
                     Tags
@@ -579,16 +536,61 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                     value={tagsInput}
                     onChange={handleTagsChange}
                     placeholder="Enter tags separated by commas"
-                    className="block w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                    className="block w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                   />
                   <p className="mt-1 text-xs text-slate-500">Separate tags with commas</p>
+                </div>
+              </div>
+
+              {/* Column 3 - Description and Details */}
+              <div className="space-y-6">
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={10}
+                    placeholder="Enter product description..."
+                    className="block w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Additional Info Card */}
+                <div className="bg-gray-900/50 rounded-xl p-5 border border-gray-800">
+                  <h4 className="text-sm font-medium text-white mb-4">Product Details</h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                      <span className="text-slate-400">Product ID:</span>
+                      <span className="text-white font-mono">#{formData.id || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                      <span className="text-slate-400">Created:</span>
+                      <span className="text-white">{new Date().toLocaleDateString()}</span>
+                    </div>
+<div className="flex justify-between items-center py-2 border-b border-gray-800">
+                      <span className="text-slate-400">Last Modified:</span>
+                      <span className="text-white">{new Date().toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-slate-400">Stock Value:</span>
+                      <span className="text-emerald-400 font-semibold">
+                        {formData.price && formData.quantity
+                          ? `₹${(parseFloat(formData.price.replace(/[₹$]/g, '')) * parseInt(formData.quantity)).toFixed(2)}`
+                          : '₹0.00'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Modal footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 bg-gray-900/30">
+          <div className="flex items-center justify-between px-8 py-5 border-t border-gray-800 bg-gray-900/30">
             <div>
               {!formData.isNew && onDelete && (
                 <button
@@ -597,22 +599,22 @@ const ProductModal = ({ isOpen, onClose, product, onSave, onDelete, user }) => {
                       onDelete(formData.productId)
                     }
                   }}
-                  className="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+                  className="px-5 py-2.5 text-sm font-medium text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
                 >
                   Delete Product
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-gray-900 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
+                className="px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white bg-gray-900 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                className="px-6 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
               >
                 {formData.isNew ? 'Add Product' : 'Save Changes'}
               </button>
