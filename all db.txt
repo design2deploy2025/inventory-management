@@ -1,0 +1,336 @@
+[
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nBEGIN\n    INSERT INTO public.profiles (id, email, created_at, updated_at)\n    VALUES (NEW.id, NEW.email, NOW(), NOW());\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.set_product_sku()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    IF NEW.sku IS NULL OR NEW.sku = '' THEN\n        NEW.sku := 'PRD-' || UPPER(SUBSTRING(MD5(NEW.id::TEXT) FROM 1 FOR 8));\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.set_customer_id()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    NEW.id := COALESCE(NEW.id, gen_random_uuid());\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.set_invoice_number()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    next_num INTEGER;\n    year_str TEXT;\n    month_str TEXT;\nBEGIN\n    year_str := TO_CHAR(NOW(), 'YY');\n    month_str := TO_CHAR(NOW(), 'MM');\n    \n    SELECT COALESCE(MAX(\n        CAST(SUBSTRING(invoice_number FROM 8 FOR 4) AS INTEGER)\n    ), 0) + 1 INTO next_num\n    FROM invoices\n    WHERE user_id = NEW.user_id;\n    \n    NEW.invoice_number := 'INV-' || year_str || month_str || '-' || LPAD(next_num::TEXT, 4, '0');\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.update_product_sales()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    item JSONB;\nBEGIN\n    IF NEW.order_status = 'Completed' AND NEW.payment_status = 'Paid' THEN\n        FOR item IN SELECT * FROM jsonb_array_elements(NEW.products)\n        LOOP\n            UPDATE products\n            SET total_sold = total_sold + (item->>'quantity')::integer\n            WHERE user_id = NEW.user_id\n            AND name = item->>'name';\n        END LOOP;\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.get_dashboard_stats(user_uuid uuid)\n RETURNS TABLE(total_products integer, total_customers integer, total_orders integer, total_revenue numeric, pending_orders integer, low_stock_products integer)\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN QUERY\n    SELECT \n        (SELECT COUNT(*) FROM products WHERE user_id = user_uuid)::INTEGER AS total_products,\n        (SELECT COUNT(*) FROM customers WHERE user_id = user_uuid)::INTEGER AS total_customers,\n        (SELECT COUNT(*) FROM orders WHERE user_id = user_uuid)::INTEGER AS total_orders,\n        (SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE user_id = user_uuid AND payment_status = 'Paid')::DECIMAL(10,2) AS total_revenue,\n        (SELECT COUNT(*) FROM orders WHERE user_id = user_uuid AND order_status = 'Pending')::INTEGER AS pending_orders,\n        (SELECT COUNT(*) FROM products WHERE user_id = user_uuid AND quantity < 10)::INTEGER AS low_stock_products;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.recalculate_all_customer_lifetime_values()\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    customer_record RECORD;\n    total_order_count INTEGER;\n    repeat_count INTEGER;\nBEGIN\n    -- Loop through all customers\n    FOR customer_record IN \n        SELECT id FROM customers\n    LOOP\n\n        SELECT COUNT(*) INTO total_order_count\n        FROM orders\n        WHERE customer_id = customer_record.id;\n\n        repeat_count := GREATEST(total_order_count - 1, 0);\n\n        UPDATE customers\n        SET \n            lifetime_value = (\n                SELECT COALESCE(SUM(total_price), 0)\n                FROM orders\n                WHERE customer_id = customer_record.id\n            ),\n            repeat_orders = repeat_count,\n            last_order_date = (\n                SELECT MAX(created_at)::date\n                FROM orders\n                WHERE customer_id = customer_record.id\n            ),\n            last_order_details = (\n                SELECT COALESCE(\n                    string_agg(\n                        (p->>'name') || ' - ₹' || (p->>'price'),\n                        ', '\n                    ),\n                    'No details'\n                )\n                FROM (\n                    SELECT products\n                    FROM orders\n                    WHERE customer_id = customer_record.id\n                    ORDER BY created_at DESC\n                    LIMIT 1\n                ) o,\n                jsonb_array_elements(o.products) AS p\n            ),\n            updated_at = NOW()\n        WHERE id = customer_record.id;\n\n    END LOOP;\n\n    RAISE NOTICE 'Successfully recalculated lifetime values and repeat orders for all customers';\n\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.get_global_stats()\n RETURNS TABLE(total_customers bigint, total_orders bigint, total_units_of_stock bigint, total_value_of_stock numeric, total_revenue numeric, total_products_listed bigint, total_feedbacks bigint)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n    RETURN QUERY\n    SELECT \n        (SELECT COUNT(*)::BIGINT FROM customers)::BIGINT AS total_customers,\n        (SELECT COUNT(*)::BIGINT FROM orders)::BIGINT AS total_orders,\n        (SELECT COALESCE(SUM(quantity), 0)::BIGINT FROM products)::BIGINT AS total_units_of_stock,\n        (SELECT COALESCE(SUM(price * quantity), 0)::DECIMAL(15,2) FROM products)::DECIMAL(15,2) AS total_value_of_stock,\n        (SELECT COALESCE(SUM(total_price), 0)::DECIMAL(15,2) FROM orders)::DECIMAL(15,2) AS total_revenue,\n        (SELECT COUNT(*)::BIGINT FROM products)::BIGINT AS total_products_listed,\n        (SELECT COUNT(*)::BIGINT FROM feedback)::BIGINT AS total_feedbacks;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.increment_total_sold()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nDECLARE\n    product_rec RECORD;\nBEGIN\n    IF NEW.order_status = 'Completed' AND NEW.payment_status = 'Paid' THEN\n        FOR product_rec IN SELECT jsonb_array_elements(NEW.products) AS p LOOP\n            UPDATE products \n            SET total_sold = total_sold + (product_rec.p->>'quantity')::int,\n                updated_at = NOW()\n            WHERE user_id = NEW.user_id \nAND (id::text = COALESCE((product_rec.p->>'id'), '') OR name ILIKE COALESCE((product_rec.p->>'name'), ''));\n        END LOOP;\n    END IF;\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.set_order_number()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    next_num INTEGER;\n    year_str TEXT;\n    new_order_num TEXT;\n    max_attempts INTEGER := 10;\n    attempt INTEGER := 0;\nBEGIN\n    year_str := TO_CHAR(NOW(), 'YY');\n    \n    -- Check if custom order number is provided\n    IF NEW.order_number IS NOT NULL AND NEW.order_number != '' THEN\n        -- Validate: Check if custom order number is already used by this user\n        IF EXISTS (\n            SELECT 1 FROM orders \n            WHERE order_number = NEW.order_number \n            AND user_id = NEW.user_id\n        ) THEN\n            -- Custom order number already exists for this user, append timestamp to make it unique\n            NEW.order_number := NEW.order_number || '-' || EXTRACT(EPOCH FROM NOW())::TEXT;\n        ELSE\n            -- Custom order number is valid, use it as-is\n            NEW.order_number := NEW.order_number;\n        END IF;\n        \n        RETURN NEW;\n    END IF;\n    \n    -- If no custom order number provided, auto-generate one\n    -- Retry loop to handle race conditions\n    LOOP\n        attempt := attempt + 1;\n        \n        -- Get next number for THIS USER ONLY\n        SELECT COALESCE(MAX(\n            CAST(SUBSTRING(order_number FROM 7 FOR 3) AS INTEGER)\n        ), 0) + 1 INTO next_num\n        FROM orders\n        WHERE user_id = NEW.user_id;\n        \n        new_order_num := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0');\n        \n        -- Check if this order_number already exists FOR THIS USER (rare race condition)\n        IF NOT EXISTS (SELECT 1 FROM orders WHERE order_number = new_order_num AND user_id = NEW.user_id) THEN\n            NEW.order_number := new_order_num;\n            EXIT;\n        END IF;\n        \n        -- If we've tried too many times, exit with what we have\n        IF attempt >= max_attempts THEN\n            -- Fallback: use timestamp-based unique number\n            NEW.order_number := 'ORD-' || year_str || '-' || LPAD(next_num::TEXT, 3, '0') || '-' || EXTRACT(EPOCH FROM NOW())::TEXT;\n            EXIT;\n        END IF;\n    END LOOP;\n    \n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.update_customer_lifetime_value_on_update()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    customer_total DECIMAL(10,2);\n    total_order_count INTEGER;\n    repeat_count INTEGER;\nBEGIN\n    -- Only recalculate if important fields changed\n    IF OLD.customer_id IS DISTINCT FROM NEW.customer_id OR\n       OLD.payment_status IS DISTINCT FROM NEW.payment_status OR\n       OLD.total_price IS DISTINCT FROM NEW.total_price THEN\n\n        ----------------------------------------------------------------\n        -- Update OLD customer if the order was reassigned\n        ----------------------------------------------------------------\n        IF OLD.customer_id IS NOT NULL AND OLD.customer_id != NEW.customer_id THEN\n\n            SELECT COALESCE(SUM(total_price),0), COUNT(*)\n            INTO customer_total, total_order_count\n            FROM orders\n            WHERE customer_id = OLD.customer_id;\n\n            repeat_count := GREATEST(total_order_count - 1, 0);\n\n            UPDATE customers\n            SET\n                lifetime_value = customer_total,\n                repeat_orders = repeat_count,\n                last_order_date = (\n                    SELECT MAX(created_at)::date\n                    FROM orders\n                    WHERE customer_id = OLD.customer_id\n                ),\n                updated_at = NOW()\n            WHERE id = OLD.customer_id;\n\n        END IF;\n\n        ----------------------------------------------------------------\n        -- Update NEW / current customer\n        ----------------------------------------------------------------\n        IF NEW.customer_id IS NOT NULL THEN\n\n            SELECT COALESCE(SUM(total_price),0), COUNT(*)\n            INTO customer_total, total_order_count\n            FROM orders\n            WHERE customer_id = NEW.customer_id;\n\n            repeat_count := GREATEST(total_order_count - 1, 0);\n\n            UPDATE customers\n            SET\n                lifetime_value = customer_total,\n                repeat_orders = repeat_count,\n                last_order_date = (\n                    SELECT MAX(created_at)::date\n                    FROM orders\n                    WHERE customer_id = NEW.customer_id\n                ),\n\n                -- Get latest order product details\n                last_order_details = (\n                    SELECT string_agg(\n                        (p->>'name') || ' - ₹' || (p->>'price'),\n                        ', '\n                    )\n                    FROM (\n                        SELECT products\n                        FROM orders\n                        WHERE customer_id = NEW.customer_id\n                        ORDER BY created_at DESC\n                        LIMIT 1\n                    ) latest_order,\n                    jsonb_array_elements(latest_order.products) AS p\n                ),\n\n                updated_at = NOW()\n            WHERE id = NEW.customer_id;\n\n        END IF;\n\n    END IF;\n\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.generate_order_number()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    next_number INTEGER;\n    year_part TEXT;\nBEGIN\n    year_part := TO_CHAR(CURRENT_DATE, 'YY');\n\n    SELECT COALESCE(MAX(\n        CAST(SUBSTRING(order_number FROM '[0-9]+$') AS INTEGER)\n    ), 0) + 1\n    INTO next_number\n    FROM orders\n    WHERE user_id = NEW.user_id\n      AND order_number LIKE 'ORD-' || year_part || '-%';\n\n    NEW.order_number := \n        'ORD-' || year_part || '-' || LPAD(next_number::TEXT, 4, '0');\n\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.update_customer_lifetime_value_on_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    customer_total DECIMAL(10,2);\n    total_order_count INTEGER;\n    repeat_count INTEGER;\nBEGIN\n\n    IF OLD.customer_id IS NOT NULL THEN\n\n        SELECT COALESCE(SUM(total_price),0), COUNT(*)\n        INTO customer_total, total_order_count\n        FROM orders\n        WHERE customer_id = OLD.customer_id;\n\n        repeat_count := GREATEST(total_order_count - 1,0);\n\n        UPDATE customers\n        SET\n            lifetime_value = customer_total,\n            repeat_orders = repeat_count,\n            last_order_date = (\n                SELECT MAX(created_at)::date\n                FROM orders\n                WHERE customer_id = OLD.customer_id\n            ),\n            last_order_details = (\n                SELECT string_agg(\n                    (p->>'name') || ' - ₹' || (p->>'price'),\n                    ', '\n                )\n                FROM (\n                    SELECT products\n                    FROM orders\n                    WHERE customer_id = OLD.customer_id\n                    ORDER BY created_at DESC\n                    LIMIT 1\n                ) o,\n                jsonb_array_elements(o.products) AS p\n            ),\n            updated_at = NOW()\n        WHERE id = OLD.customer_id;\n\n    END IF;\n\n    RETURN OLD;\n\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.deduct_stock_on_order_insert()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nDECLARE\n    product_record RECORD;\n    current_quantity INTEGER;\n    new_quantity INTEGER;\nBEGIN\n    -- Loop through each product in the order's JSONB products array\n    FOR product_record IN \n        SELECT jsonb_array_elements(NEW.products) AS product\n    LOOP\n        -- Handle both id-based and name-based matching\n        SELECT quantity INTO current_quantity\n        FROM products \n        WHERE user_id = NEW.user_id \n        AND (\n            id = COALESCE((product_record.product->>'id')::uuid, NULL) \n            OR name ILIKE COALESCE((product_record.product->>'name'), '')\n        )\n        LIMIT 1;\n        \n        IF FOUND THEN\n            current_quantity := COALESCE(current_quantity, 0);\n            new_quantity := GREATEST(0, current_quantity - (product_record.product->>'quantity')::int);\n            \n            -- Update product quantity\n            UPDATE products \n                SET \n                    quantity = new_quantity,\n                    updated_at = NOW()\n                WHERE user_id = NEW.user_id \n                AND (\n                    id = COALESCE((product_record.product->>'id')::uuid, NULL) \n                    OR name ILIKE COALESCE((product_record.product->>'name'), '')\n                );\n            \n            -- Log to stock history\n            INSERT INTO stock_history (user_id, product_id, quantity_change, previous_quantity, new_quantity, reason, created_at)\n            VALUES (\n                NEW.user_id,\n                (SELECT id FROM products WHERE user_id = NEW.user_id AND (id = COALESCE((product_record.product->>'id')::uuid, NULL) OR name ILIKE COALESCE((product_record.product->>'name'), '')) LIMIT 1),\n                -((product_record.product->>'quantity')::int),\n                current_quantity,\n                new_quantity,\n                'Order #' || NEW.order_number || ' created',\n                NOW()\n            );\n        END IF;\n    END LOOP;\n    \n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.adjust_stock_on_order_update()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nDECLARE\n    old_product RECORD;\n    new_product RECORD;\n    current_quantity INTEGER;\n    product_id UUID;\nBEGIN\n    -- Only adjust stock if order_status is not Cancelled\n    IF NEW.order_status = 'Cancelled' THEN\n        -- Restore stock for cancelled order (reverse deduction)\n        FOR old_product IN \n            SELECT jsonb_array_elements(OLD.products) AS product\n        LOOP\n            SELECT id, quantity INTO product_id, current_quantity\n            FROM products \n            WHERE user_id = OLD.user_id \n            AND (\n                id = COALESCE((old_product.product->>'id')::uuid, NULL) \n                OR name ILIKE COALESCE((old_product.product->>'name'), '')\n            )\n            LIMIT 1;\n            \n            IF FOUND THEN\n                UPDATE products \n                SET \n                    quantity = current_quantity + (old_product.product->>'quantity')::int,\n                    updated_at = NOW()\n                WHERE id = product_id;\n                \n                INSERT INTO stock_history (user_id, product_id, quantity_change, previous_quantity, new_quantity, reason)\n                VALUES (\n                    OLD.user_id,\n                    product_id,\n                    (old_product.product->>'quantity')::int,\n                    current_quantity,\n                    current_quantity + (old_product.product->>'quantity')::int,\n                    'Stock restored - Order #' || OLD.order_number || ' cancelled'\n                );\n            END IF;\n        END LOOP;\n        RETURN NEW;\n    END IF;\n    \n    -- Compare OLD vs NEW products to adjust differences\n    -- 1. Products removed (restore stock)\n    FOR old_product IN \nSELECT jsonb_array_elements(OLD.products) AS product\n        WHERE NOT EXISTS (\n            SELECT 1 FROM jsonb_array_elements(NEW.products) AS np \n            WHERE COALESCE(np->>'name', '') = COALESCE((product->>'name'), '')\n        )\n    LOOP\n        SELECT id, quantity INTO product_id, current_quantity\n        FROM products WHERE user_id = OLD.user_id \nAND (id = COALESCE((product->>'id')::uuid, NULL) OR name ILIKE COALESCE((product->>'name'), ''))\n        LIMIT 1;\n        \n        IF FOUND THEN\n            UPDATE products SET quantity = current_quantity + (old_product.product->>'quantity')::int, updated_at = NOW()\n            WHERE id = product_id;\n            \n            INSERT INTO stock_history (user_id, product_id, quantity_change, previous_quantity, new_quantity, reason)\n            VALUES (\n                OLD.user_id, product_id, (old_product.product->>'quantity')::int, \n                current_quantity, current_quantity + (old_product.product->>'quantity')::int,\n                'Stock restored - Order #' || OLD.order_number || ' product removed'\n            );\n        END IF;\n    END LOOP;\n    \n    -- Simplified: Re-deduct all new products (handles adds/changes reliably)\n    FOR new_product IN \n        SELECT jsonb_array_elements(NEW.products) AS product\n    LOOP\n        PERFORM deduct_stock_single_product(NEW.user_id, new_product.product);\n    END LOOP;\n    \n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.deduct_stock_single_product(user_uuid uuid, product_json jsonb)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\nDECLARE\n    product_id UUID;\n    current_quantity INTEGER;\n    qty_ordered INTEGER;\n    new_quantity INTEGER;\nBEGIN\n    qty_ordered := (product_json->>'quantity')::int;\n    \n    SELECT id, quantity INTO product_id, current_quantity\n    FROM products \n    WHERE user_id = user_uuid \n    AND (id = COALESCE((product_json->>'id')::uuid, NULL) OR name ILIKE COALESCE((product_json->>'name'), ''))\n    LIMIT 1;\n    \n    IF FOUND THEN\n        new_quantity := GREATEST(0, COALESCE(current_quantity, 0) - qty_ordered);\n        \n        UPDATE products \n        SET quantity = new_quantity, updated_at = NOW()\n        WHERE id = product_id;\n        \n        INSERT INTO stock_history (user_id, product_id, quantity_change, previous_quantity, new_quantity, reason)\n        VALUES (user_uuid, product_id, -qty_ordered, current_quantity, new_quantity, 'Order adjustment');\n    END IF;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.update_customer_lifetime_value()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    customer_total DECIMAL(10, 2);\n    total_order_count INTEGER;\n    repeat_count INTEGER;\nBEGIN\n    -- Calculate lifetime value from ALL orders (includes first order, correct for LTV)\n    SELECT \n        COALESCE(SUM(total_price), 0), \n        COUNT(*)\n    INTO customer_total, total_order_count\n    FROM orders\n    WHERE customer_id = NEW.customer_id;\n\n    -- Repeat orders exclude first order: total - 1 (min 0)\n    repeat_count := GREATEST(total_order_count - 1, 0);\n\n    -- Update customer record\n    UPDATE customers\n    SET \n        lifetime_value = customer_total,\n        repeat_orders = repeat_count,\n        last_order_date = (SELECT MAX(created_at)::date FROM orders WHERE customer_id = NEW.customer_id),\n        last_order_details = (\n            SELECT string_agg(\n                (p->>'name') || ' - ₹' || (p->>'price'),\n                ', '\n            )\n            FROM jsonb_array_elements(\n                COALESCE(NEW.products::jsonb, '[]'::jsonb)\n            ) AS p\n        ),\n        updated_at = NOW()\n    WHERE id = NEW.customer_id;\n\n    RETURN NEW;\nEND;\n$function$\n"
+  },
+  {
+    "pg_get_functiondef": "CREATE OR REPLACE FUNCTION public.get_all_feedbacks()\n RETURNS TABLE(id uuid, user_id uuid, user_name text, subject text, category text, description text, created_at timestamp with time zone)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n    RETURN QUERY\n    SELECT \n        f.id,\n        f.user_id,\n        f.user_name,\n        f.subject,\n        f.category,\n        f.description,\n        f.created_at\n    FROM feedback f\n    ORDER BY f.created_at DESC;\nEND;\n$function$\n"
+  }
+]
+
+
+
+
+
+[
+  {
+    "event_object_table": "products",
+    "trigger_name": "set_product_sku_trigger",
+    "action_statement": "EXECUTE FUNCTION set_product_sku()"
+  },
+  {
+    "event_object_table": "customers",
+    "trigger_name": "set_customer_id_trigger",
+    "action_statement": "EXECUTE FUNCTION set_customer_id()"
+  },
+  {
+    "event_object_table": "invoices",
+    "trigger_name": "set_invoice_number_trigger",
+    "action_statement": "EXECUTE FUNCTION set_invoice_number()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "before_insert_order_number",
+    "action_statement": "EXECUTE FUNCTION generate_order_number()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "update_customer_stats",
+    "action_statement": "EXECUTE FUNCTION update_customer_lifetime_value()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "update_customer_stats_on_update",
+    "action_statement": "EXECUTE FUNCTION update_customer_lifetime_value_on_update()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "update_customer_stats_on_delete",
+    "action_statement": "EXECUTE FUNCTION update_customer_lifetime_value_on_delete()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "deduct_stock_insert",
+    "action_statement": "EXECUTE FUNCTION deduct_stock_on_order_insert()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "adjust_stock_update",
+    "action_statement": "EXECUTE FUNCTION adjust_stock_on_order_update()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "update_total_sold",
+    "action_statement": "EXECUTE FUNCTION increment_total_sold()"
+  },
+  {
+    "event_object_table": "orders",
+    "trigger_name": "update_total_sold",
+    "action_statement": "EXECUTE FUNCTION increment_total_sold()"
+  }
+]
+
+
+
+
+
+
+[
+  {
+    "table_name": "profiles"
+  },
+  {
+    "table_name": "products"
+  },
+  {
+    "table_name": "customers"
+  },
+  {
+    "table_name": "orders"
+  },
+  {
+    "table_name": "feedback"
+  },
+]
+
+
+
+
+
+
+
+
+
+
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.analytics_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  event_type text NOT NULL,
+  event_data jsonb DEFAULT '{}'::jsonb,
+  visitor_id uuid,
+  session_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT analytics_events_pkey PRIMARY KEY (id),
+  CONSTRAINT analytics_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.checklist_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  checklist_id uuid NOT NULL,
+  title text NOT NULL,
+  is_completed boolean DEFAULT false,
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT checklist_items_pkey PRIMARY KEY (id),
+  CONSTRAINT checklist_items_checklist_id_fkey FOREIGN KEY (checklist_id) REFERENCES public.checklists(id)
+);
+CREATE TABLE public.checklists (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT checklists_pkey PRIMARY KEY (id),
+  CONSTRAINT checklists_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.customers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  phone text,
+  instagram text,
+  email text,
+  address text,
+  notes text,
+  lifetime_value numeric DEFAULT 0,
+  repeat_orders integer DEFAULT 0,
+  last_order_date date,
+  last_order_details text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  insta text,
+  CONSTRAINT customers_pkey PRIMARY KEY (id),
+  CONSTRAINT customers_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.feedback (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  user_name text,
+  subject text NOT NULL,
+  category text NOT NULL DEFAULT 'suggestion'::text,
+  description text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT feedback_pkey PRIMARY KEY (id),
+  CONSTRAINT feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.guides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  description text,
+  category text,
+  content text,
+  is_published boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT guides_pkey PRIMARY KEY (id),
+  CONSTRAINT guides_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.invoices (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  order_id uuid,
+  invoice_number text NOT NULL UNIQUE,
+  invoice_date date NOT NULL,
+  due_date date,
+  subtotal numeric DEFAULT 0,
+  tax numeric DEFAULT 0,
+  total numeric DEFAULT 0,
+  status USER-DEFINED DEFAULT 'Unpaid'::payment_status,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT invoices_pkey PRIMARY KEY (id),
+  CONSTRAINT invoices_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id)
+);
+CREATE TABLE public.order_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  order_id uuid NOT NULL,
+  product_id uuid,
+  product_name text NOT NULL,
+  product_price numeric NOT NULL,
+  quantity integer NOT NULL DEFAULT 1,
+  subtotal numeric NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
+  CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+CREATE TABLE public.orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  order_number text NOT NULL,
+  customer_id uuid,
+  customer_name text NOT NULL,
+  customer_phone text,
+  customer_instagram text,
+  total_price numeric NOT NULL DEFAULT 0,
+  order_status USER-DEFINED DEFAULT 'Pending'::order_status,
+  payment_status USER-DEFINED DEFAULT 'Unpaid'::payment_status,
+  payment_type USER-DEFINED,
+  notes text,
+  products jsonb DEFAULT '[]'::jsonb,
+  invoice_date date,
+  due_date date,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  customer_whatsapp text,
+  source text,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
+CREATE TABLE public.products (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  price numeric NOT NULL DEFAULT 0,
+  description text,
+  category text DEFAULT 'Other'::text,
+  quantity integer DEFAULT 0,
+  sku text UNIQUE,
+  status USER-DEFINED DEFAULT 'Active'::product_status,
+  image_url text,
+  image_alt text,
+  total_sold integer DEFAULT 0,
+  tags ARRAY,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  image_src text,
+  CONSTRAINT products_pkey PRIMARY KEY (id),
+  CONSTRAINT products_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL,
+  business_name text,
+  owner_name text,
+  instagram_handle text,
+  description text,
+  logo_url text,
+  address text,
+  email_alerts_enabled boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  whatsapp_number text,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.stock_history (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  quantity_change integer NOT NULL,
+  previous_quantity integer NOT NULL,
+  new_quantity integer NOT NULL,
+  reason text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT stock_history_pkey PRIMARY KEY (id),
+  CONSTRAINT stock_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT stock_history_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+
+
+
+
