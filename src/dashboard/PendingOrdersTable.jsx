@@ -385,7 +385,10 @@ const PendingOrdersTable = () => {
       // Get the original order to compare and adjust stock
       const originalOrder = orders.find(o => o.orderId === updatedOrderData.orderId)
       
-      // EXPLICIT FIELD WHITELIST - excludes 'products' to avoid schema error
+// 🔧 FIXED: Defensive payload cleaning for "product does not exist" error
+      console.log('📥 Incoming updatedOrderData keys:', Object.keys(updatedOrderData))
+      
+      // Explicit whitelist + defensive delete
       const supabaseOrderData = {
         customer_name: updatedOrderData.customerName,
         customer_phone: updatedOrderData.customerPhone,
@@ -398,9 +401,21 @@ const PendingOrdersTable = () => {
         notes: updatedOrderData.notes,
         source: updatedOrderData.source,
         updated_at: new Date().toISOString()
-        // NOTE: 'products' EXCLUDED - prevents "column product does not exist" error
-        // Original products data preserved from INSERT
       }
+      
+      // 🔒 DEFENSIVE: Explicitly remove any rogue 'products'/'product' fields
+      delete supabaseOrderData.products
+      delete supabaseOrderData.product
+      
+      // Verify clean payload
+      const invalidFields = Object.keys(supabaseOrderData).filter(key => 
+        key === 'products' || key === 'product' || key.includes('product')
+      )
+      if (invalidFields.length > 0) {
+        console.warn('⚠️ Invalid product fields detected and removed:', invalidFields)
+      }
+      
+      console.log('✅ Clean payload keys:', Object.keys(supabaseOrderData).sort())
 
       console.log('📤 Supabase update payload:', supabaseOrderData)
 

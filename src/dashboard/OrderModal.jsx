@@ -488,7 +488,8 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       }
     }
 
-    const orderData = {
+    // 🔧 FIXED: Strip products for update mode to prevent "column product does not exist"
+    const baseOrderData = {
       // Only include id in edit mode - in create mode, DB generates order_number via trigger
       ...(isEditMode && { id: formData.orderId }),
       orderId: isEditMode ? orderToEdit?.orderId : null, // Include the UUID for editing
@@ -502,7 +503,6 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       paymentType: formData.paymentType,
       paymentStatus: formData.paymentStatus,
       orderStatus: formData.orderStatus,
-      products: formData.selectedProducts,
       totalPrice: calculateTotal(),
       notes: formData.notes,
       source: formData.source,
@@ -511,6 +511,14 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
         : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       createdAt: isEditMode ? orderToEdit?.createdAt : new Date().toISOString(),
     }
+    
+    const orderData = {
+      ...baseOrderData,
+      // Include products ONLY for CREATE (onSave), exclude for UPDATE (onUpdate)
+      ...( !isEditMode ? { products: formData.selectedProducts } : {} )
+    }
+    
+    console.log('📤 OrderModal sending:', isEditMode ? 'UPDATE (products stripped)' : 'CREATE (with products)')
     
     if (isEditMode) {
       if (onUpdate) {
