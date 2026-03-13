@@ -371,36 +371,59 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Handle updating existing order in Supabase
+  // Handle updating existing order in Supabase  
   const handleUpdateOrder = async (updatedOrderData) => {
     if (!user || !updatedOrderData.orderId) return
 
     try {
+      console.log('🔄 Updating order:', { 
+        orderId: updatedOrderData.orderId, 
+        orderStatus: updatedOrderData.orderStatus,
+        paymentStatus: updatedOrderData.paymentStatus 
+      })
+
       // Get the original order to compare and adjust stock
       const originalOrder = orders.find(o => o.orderId === updatedOrderData.orderId)
       
+      // EXPLICIT FIELD WHITELIST - excludes 'products' to avoid schema error
       const supabaseOrderData = {
         customer_name: updatedOrderData.customerName,
         customer_phone: updatedOrderData.customerPhone,
         customer_whatsapp: updatedOrderData.customerWhatsApp || updatedOrderData.customerPhone,
         customer_instagram: updatedOrderData.customerInstagram,
-        total_price: updatedOrderData.totalPrice,
+        total_price: parseFloat(updatedOrderData.totalPrice) || 0,
         order_status: updatedOrderData.orderStatus,
         payment_status: updatedOrderData.paymentStatus,
         payment_type: updatedOrderData.paymentType,
         notes: updatedOrderData.notes,
-        products: updatedOrderData.products,
         source: updatedOrderData.source,
         updated_at: new Date().toISOString()
+        // NOTE: 'products' EXCLUDED - prevents "column product does not exist" error
+        // Original products data preserved from INSERT
       }
 
-      const { error } = await supabase
+      console.log('📤 Supabase update payload:', supabaseOrderData)
+
+      const { data, error } = await supabase
         .from('orders')
         .update(supabaseOrderData)
         .eq('id', updatedOrderData.orderId)
         .eq('user_id', user.id)
+        .select('id, order_status, payment_status, total_price, updated_at')
+        .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ Supabase update ERROR:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fields: Object.keys(supabaseOrderData)
+        })
+        throw new Error(`Database update failed: ${error.message}. Check console for details.`)
+      }
+
+      console.log('✅ Order updated successfully:', data)
 
       // Handle stock adjustments based on order status change
       if (originalOrder) {
