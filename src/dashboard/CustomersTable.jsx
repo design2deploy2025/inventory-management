@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import CustomerModal from './CustomerModal'
+import Pagination from './Pagination'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -8,8 +9,13 @@ const CustomersTable = () => {
   
   // State for customers from Supabase
   const [customers, setCustomers] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Pagination
+  const PAGE_SIZE = 10
+  const [currentPage, setCurrentPage] = useState(1)
   
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
   const [customerToEdit, setCustomerToEdit] = useState(null)
@@ -19,26 +25,65 @@ const CustomersTable = () => {
   const [sortBy, setSortBy] = useState('name')
   // const [sourceFilter, setSourceFilter] = useState('All')
 
-  // Fetch customers from Supabase
-  const fetchCustomers = async () => {
+  // Fetch customers with pagination from Supabase
+  const fetchCustomers = async (page = currentPage, resetTotal = false) => {
     if (!user) return
     
     try {
       setLoading(true)
       setError(null)
-      
-      const { data, error: fetchError } = await supabase
+
+      const from = (page - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
+      // Build query with filters
+      let query = supabase
         .from('customers')
-        .select('*')
+        .select('*', { count: resetTotal ? 'exact' : 'head' })
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      // Search filter - search across name, phone, instagram, insta
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,insta.ilike.%${searchTerm}%,instagram.ilike.%${searchTerm}%`)
+      }
 
-      // Transform data to match component's expected format
+      // Sort
+      let orderField = 'name'
+      let ascending = true
+      switch (sortBy) {
+        case 'name':
+          orderField = 'name'
+          ascending = true
+          break
+        case 'lifetimeValue':
+          orderField = 'lifetime_value'
+          ascending = false
+          break
+        case 'repeatOrders':
+          orderField = 'repeat_orders'
+          ascending = false
+          break
+        case 'recent':
+          orderField = 'last_order_date'
+          ascending = false
+          break
+      }
+      query = query.order(orderField, { ascending })
+
+      query = query.range(from, to)
+
+      const { data, count, error } = await query
+
+      if (error) throw error
+
+      if (resetTotal && count !== null) {
+        setTotalCount(count)
+      }
+
+      // Transform data
       const transformedCustomers = data?.map(customer => ({
         id: customer.id,
-        customerId: customer.id, // Keep the UUID for editing
+        customerId: customer.id,
         name: customer.name || '',
         phone: customer.phone || '',
         whatsapp: customer.phone || '',
@@ -51,7 +96,6 @@ const CustomersTable = () => {
         lifetimeValue: customer.lifetime_value || 0,
         repeatOrders: customer.repeat_orders || 0,
         lastOrderDetails: customer.last_order_details || 'No orders yet',
-        // source: customer.instagram || customer.insta ? 'Instagram' : 'WhatsApp',
         created_at: customer.created_at,
         updated_at: customer.updated_at
       })) || []
@@ -68,7 +112,7 @@ const CustomersTable = () => {
   // Fetch customers when user changes
   useEffect(() => {
     if (user) {
-      fetchCustomers()
+      fetchCustomers(1, true)
     }
   }, [user])
 
@@ -106,11 +150,25 @@ const CustomersTable = () => {
     }).format(price)
   }
 
-  // Clear all filters
+  // Clear all filters and reset pagination
   const clearFilters = () => {
     setSearchTerm('')
     setSortBy('name')
     // setSourceFilter('All')
+    setCurrentPage(1)
+    fetchCustomers(1, true)
+  }
+
+  // Handle filter changes - reset to page 1
+  const handleFilterChange = () => {
+    setCurrentPage(1)
+    fetchCustomers(1, true)
+  }
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    fetchCustomers(page)
   }
 
   // Check if any filters are active
@@ -260,44 +318,7 @@ const CustomersTable = () => {
     }
   }
 
-  // Filter and sort customers based on current filters
-  const filteredCustomers = useMemo(() => {
-    let result = [...customers]
-    
-    // Search filter
-    if (searchTerm) {
-      result = result.filter(customer =>
-        customer.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (customer.phone && customer.phone.includes(searchTerm)) ||
-        (customer.whatsapp && customer.whatsapp.includes(searchTerm)) ||
-        (customer.insta && customer.insta.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
-    }
 
-    // Source filter
-    // if (sourceFilter !== 'All') {
-    //   result = result.filter(customer => customer.source === sourceFilter)
-    // }
-    
-    // Sort
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name)
-        case 'lifetimeValue':
-          return b.lifetimeValue - a.lifetimeValue
-        case 'repeatOrders':
-          return b.repeatOrders - a.repeatOrders
-        case 'recent':
-          return new Date(b.lastOrderDate || 0) - new Date(a.lastOrderDate || 0)
-        default:
-          return 0
-      }
-    })
-    
-    return result
-  }, [customers, searchTerm, sortBy])
 
   // Repeat order badge color helper
   const getRepeatOrderBadge = (count) => {
@@ -357,11 +378,14 @@ const CustomersTable = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <input
+              <input
                   type="text"
                   placeholder="Search by Name, Phone, or Instagram..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 />
               </div>
@@ -370,7 +394,10 @@ const CustomersTable = () => {
               {/* <div className="min-w-[150px]">
                 <select
                   value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
+                  onChange={(e) => {
+                    setSourceFilter(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 >
                   <option value="All">All Sources</option>
@@ -383,7 +410,10 @@ const CustomersTable = () => {
               <div className="min-w-[150px]">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 >
                   <option value="name">Sort by Name</option>
@@ -405,7 +435,7 @@ const CustomersTable = () => {
 
               {/* Results Count */}
               <div className="ml-auto text-sm text-slate-400">
-                Showing {filteredCustomers.length} of {customers.length} customers
+                Showing {customers.length} of {totalCount} customers
               </div>
             </div>
           </div>
@@ -464,8 +494,8 @@ const CustomersTable = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => (
+                {customers.length > 0 ? (
+                    customers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-gray-900/50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                           {customer.id.slice(0, 8).toUpperCase()}
@@ -526,7 +556,7 @@ const CustomersTable = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
+                      <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
                         <div className="flex flex-col items-center justify-center">
                           <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -542,22 +572,21 @@ const CustomersTable = () => {
             )}
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              Showing {filteredCustomers.length} customers
-            </p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredCustomers.length === 0}>
-                Previous
-              </button>
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredCustomers.length === 0}>
-                Next
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalCount / PAGE_SIZE)}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            onPageChange={handlePageChange}
+          />
         </div>
       </div>
+
+      {/* Attach filter change handlers */}
+      {(() => {
+        const handleInputChange = () => handleFilterChange()
+        return null
+      })()}
 
       {/* Customer Modal */}
       <CustomerModal

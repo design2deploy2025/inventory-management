@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import OrderModal from './OrderModal'
 import InvoiceModal from './InvoiceModal'
+import Pagination from './Pagination'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -9,8 +10,13 @@ const MainTable = () => {
   
   // State for orders from Supabase
   const [orders, setOrders] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Pagination
+  const PAGE_SIZE = 10
+  const [currentPage, setCurrentPage] = useState(1)
   
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
@@ -22,14 +28,25 @@ const MainTable = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState('All')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All')
 
-  // Fetch orders from Supabase
-  const fetchOrders = async () => {
+// Fetch ALL orders from Supabase (client-side pagination)
+  const fetchOrders = async (resetTotal = false) => {
     if (!user) return
     
     try {
       setLoading(true)
       setError(null)
-      
+
+      // Fetch total count
+      if (resetTotal) {
+        const { count, error: countError } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+        if (countError) throw countError
+        setTotalCount(count || 0)
+      }
+
+      // Fetch ALL data (no range - client pagination)
       const { data, error: fetchError } = await supabase
         .from('orders')
         .select('*')
@@ -72,7 +89,7 @@ const MainTable = () => {
   // Fetch orders when user changes
   useEffect(() => {
     if (user) {
-      fetchOrders()
+      fetchOrders(1, true)
     }
   }, [user])
 
@@ -144,7 +161,7 @@ const MainTable = () => {
     }
   }
 
-  // Filter orders based on current filters
+  // Filter orders based on current filters (before pagination)
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       // Search filter (Order ID or Product Name)
@@ -162,6 +179,13 @@ const MainTable = () => {
     })
   }, [orders, searchTerm, orderStatusFilter, paymentStatusFilter])
 
+  // Paginated orders
+  const paginatedOrders = useMemo(() => {
+    const from = (currentPage - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE
+    return filteredOrders.slice(from, to)
+  }, [filteredOrders, currentPage, PAGE_SIZE])
+
   // Format price to currency
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -170,11 +194,24 @@ const MainTable = () => {
     }).format(price)
   }
 
-  // Clear all filters
+  // Clear all filters and reset pagination
   const clearFilters = () => {
     setSearchTerm('')
     setOrderStatusFilter('All')
     setPaymentStatusFilter('All')
+    setCurrentPage(1)
+    fetchOrders(1, true)
+  }
+
+  // Handle filter changes - reset to page 1
+  const handleFilterChange = () => {
+    setCurrentPage(1)
+    fetchOrders(1, true)
+  }
+
+  // Handle page change (client-side - no refetch needed)
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
   }
 
   // Check if any filters are active
@@ -495,7 +532,7 @@ const MainTable = () => {
 
           {/* Filter Bar */}
           <div className="px-6 py-4 border-b border-gray-800 bg-[#0f0f0f]">
-            <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-wrap gap-4 items-center">
               {/* Search Input */}
               <div className="relative flex-1 min-w-[200px]">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -507,7 +544,10 @@ const MainTable = () => {
                   type="text"
                   placeholder="Search by Order ID or Product Name..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 />
               </div>
@@ -516,7 +556,10 @@ const MainTable = () => {
               <div className="min-w-[150px]">
                 <select
                   value={orderStatusFilter}
-                  onChange={(e) => setOrderStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setOrderStatusFilter(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 >
                   <option value="All">All Order Status</option>
@@ -531,7 +574,10 @@ const MainTable = () => {
               <div className="min-w-[150px]">
                 <select
                   value={paymentStatusFilter}
-                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentStatusFilter(e.target.value)
+                    handleFilterChange()
+                  }}
                   className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
                 >
                   <option value="All">All Payment Status</option>
@@ -553,7 +599,7 @@ const MainTable = () => {
 
               {/* Results Count */}
               <div className="ml-auto text-sm text-slate-400">
-                Showing {filteredOrders.length} of {orders.length} orders
+                Showing {filteredOrders.length} of {totalCount} orders ({paginatedOrders.length} visible)
               </div>
             </div>
           </div>
@@ -609,8 +655,8 @@ const MainTable = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {filteredOrders.length > 0 ? (
-                    filteredOrders.map((order) => (
+                  {paginatedOrders.length > 0 ? (
+                    paginatedOrders.map((order) => (
                       <tr key={order.id} className="hover:bg-gray-900/50 transition-colors duration-200">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                           {order.id}
@@ -675,22 +721,21 @@ const MainTable = () => {
             )}
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              Showing {filteredOrders.length} orders
-            </p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredOrders.length === 0}>
-                Previous
-              </button>
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredOrders.length === 0}>
-                Next
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(totalCount / PAGE_SIZE)}
+            totalItems={totalCount}
+            pageSize={PAGE_SIZE}
+            onPageChange={handlePageChange}
+          />
         </div>
       </div>
+
+      {/* Attach filter change handlers to inputs */}
+      {(() => {
+        const handleInputChange = () => handleFilterChange()
+        return null
+      })()}
 
       {/* Order Modal */}
       <OrderModal

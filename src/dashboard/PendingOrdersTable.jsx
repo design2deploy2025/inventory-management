@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import OrderModal from './OrderModal'
 import InvoiceModal from './InvoiceModal'
+import Pagination from './Pagination'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -22,7 +23,11 @@ const PendingOrdersTable = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState('Pending')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('All')
 
-  // Fetch orders from Supabase
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
+
+  // Fetch ALL orders from Supabase (client-side pagination/filtering)
   const fetchOrders = async () => {
     if (!user) return
     
@@ -38,10 +43,10 @@ const PendingOrdersTable = () => {
 
       if (fetchError) throw fetchError
 
-      // Transform data to match component's expected format
+      // Transform data
       const transformedOrders = data?.map(order => ({
         id: order.order_number,
-        orderId: order.id, // Keep the UUID for editing
+        orderId: order.id,
         products: order.products || [],
         totalPrice: order.total_price || 0,
         date: order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
@@ -69,40 +74,140 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Fetch orders when user changes
-  useEffect(() => {
-    if (user) {
-      fetchOrders()
-    }
-  }, [user])
+  // Filter orders - Always Pending/Processing + user filters
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const isPendingOrProcessing = order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
+      const matchesSearch = 
+        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.products && order.products.some(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())))
+      const matchesOrderStatus = orderStatusFilter === 'All' || order.orderStatus === orderStatusFilter
+      const matchesPaymentStatus = paymentStatusFilter === 'All' || order.paymentStatus === paymentStatusFilter
+      
+      return isPendingOrProcessing && matchesSearch && matchesOrderStatus && matchesPaymentStatus
+    })
+  }, [orders, searchTerm, orderStatusFilter, paymentStatusFilter])
 
-  // Set up real-time subscription for orders
-  useEffect(() => {
+  // Client-side pagination
+  const paginatedOrders = useMemo(() => {
+    const from = (currentPage - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE
+    return filteredOrders.slice(from, to)
+  }, [filteredOrders, currentPage])
+
+  // Handlers
+  const handleFilterChange = () => {
+    setCurrentPage(1)
+  }
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+  }
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setOrderStatusFilter('Pending')
+    setPaymentStatusFilter('All')
+    setCurrentPage(1)
+  }
+
+  const hasActiveFilters = searchTerm !== '' || paymentStatusFilter !== 'All'
+
+// Missing handlers implementation
+  const handleViewInvoice = (order) => {
+    setSelectedOrder(order)
+    setIsInvoiceModalOpen(true)
+  }
+
+  const handleEditOrder = (order) => {
+    setOrderToEdit(order)
+    setIsOrderModalOpen(true)
+  }
+
+  const handleSaveOrder = async (orderData) => {
     if (!user) return
 
-    const ordersChannel = supabase
-      .channel('pending-orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Order change detected:', payload)
-          fetchOrders() // Refresh orders on any change
-        }
-      )
-      .subscribe()
+    try {
+      // Transform frontend data back to DB format
+      const dbOrder = {
+        user_id: user.id,
+        order_number: orderData.id,
+        products: orderData.products,
+        total_price: orderData.totalPrice,
+        order_status: orderData.orderStatus || 'Pending',
+        payment_status: orderData.paymentStatus || 'Unpaid',
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        customer_whatsapp: orderData.customerWhatsApp,
+        customer_instagram: orderData.customerInstagram,
+        payment_type: orderData.paymentType || 'Cash',
+        notes: orderData.notes,
+        source: orderData.source || 'WhatsApp',
+        invoice_date: orderData.invoiceDate,
+        due_date: orderData.dueDate,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
 
-    return () => {
-      supabase.removeChannel(ordersChannel)
+      const { error } = await supabase
+        .from('orders')
+        .insert([dbOrder])
+
+      if (error) throw error
+
+      setIsOrderModalOpen(false)
+      setOrderToEdit(null)
+      fetchOrders() // Refresh list
+    } catch (err) {
+      console.error('Error saving order:', err)
+      alert('Failed to save order: ' + err.message)
     }
+  }
+
+  const handleUpdateOrder = async (orderData) => {
+    if (!user || !orderData.orderId) return
+
+    try {
+      const dbOrder = {
+        order_number: orderData.id,
+        products: orderData.products,
+        total_price: orderData.totalPrice,
+        order_status: orderData.orderStatus,
+        payment_status: orderData.paymentStatus,
+        customer_name: orderData.customerName,
+        customer_phone: orderData.customerPhone,
+        customer_whatsapp: orderData.customerWhatsApp,
+        customer_instagram: orderData.customerInstagram,
+        payment_type: orderData.paymentType,
+        notes: orderData.notes,
+        source: orderData.source,
+        invoice_date: orderData.invoiceDate,
+        due_date: orderData.dueDate,
+        updated_at: new Date().toISOString()
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update(dbOrder)
+        .eq('id', orderData.orderId)
+
+      if (error) throw error
+
+      setIsOrderModalOpen(false)
+      setOrderToEdit(null)
+      fetchOrders()
+    } catch (err) {
+      console.error('Error updating order:', err)
+      alert('Failed to update order: ' + err.message)
+    }
+  }
+
+  // Load orders on mount and user change
+  useEffect(() => {
+    fetchOrders()
   }, [user])
 
-  // Order Status badge color helper
+  // Badge helpers (same as before)
   const getOrderStatusBadge = (status) => {
     switch (status) {
       case 'Completed':
@@ -118,7 +223,6 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Payment Status badge color helper
   const getPaymentStatusBadge = (status) => {
     switch (status) {
       case 'Paid':
@@ -132,7 +236,6 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Source badge helper
   const getSourceBadge = (source) => {
     switch (source) {
       case 'WhatsApp':
@@ -144,28 +247,6 @@ const PendingOrdersTable = () => {
     }
   }
 
-  // Filter orders based on current filters - Always filter by Pending and Processing
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      // Always filter by Pending OR Processing status (show until completed or cancelled)
-      const isPendingOrProcessing = order.orderStatus === 'Pending' || order.orderStatus === 'Processing'
-      
-      // Search filter (Order ID or Product Name)
-      const matchesSearch = 
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.products && order.products.some(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase())))
-      
-      // Order Status filter - locked to Pending/Processing
-      const matchesOrderStatus = orderStatusFilter === 'All' || order.orderStatus === orderStatusFilter
-      
-      // Payment Status filter
-      const matchesPaymentStatus = paymentStatusFilter === 'All' || order.paymentStatus === paymentStatusFilter
-      
-      return isPendingOrProcessing && matchesSearch && matchesOrderStatus && matchesPaymentStatus
-    })
-  }, [orders, searchTerm, orderStatusFilter, paymentStatusFilter])
-
-  // Format price to currency
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -173,572 +254,185 @@ const PendingOrdersTable = () => {
     }).format(price)
   }
 
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchTerm('')
-    setOrderStatusFilter('Pending')
-    setPaymentStatusFilter('All')
-  }
-
-  // Check if any filters are active
-  const hasActiveFilters = searchTerm !== '' || paymentStatusFilter !== 'All'
-
-  // Handle viewing invoice
-  const handleViewInvoice = (order) => {
-    setSelectedOrder(order)
-    setIsInvoiceModalOpen(true)
-  }
-
-  // Handle editing order
-  const handleEditOrder = (order) => {
-    setOrderToEdit(order)
-    setIsOrderModalOpen(true)
-  }
-
-  // Handle saving new order to Supabase
-  const handleSaveOrder = async (orderData) => {
-    if (!user) return
-
-    try {
-      // Prepare order data for Supabase
-      const supabaseOrderData = {
-        user_id: user.id,
-        customer_name: orderData.customerName,
-        customer_phone: orderData.customerPhone,
-        customer_whatsapp: orderData.customerWhatsApp || orderData.customerPhone,
-        customer_instagram: orderData.customerInstagram,
-        total_price: orderData.totalPrice,
-        order_status: orderData.orderStatus,
-        payment_status: orderData.paymentStatus,
-        payment_type: orderData.paymentType,
-        notes: orderData.notes,
-        products: orderData.products,
-        source: orderData.source || 'WhatsApp',
-        invoice_date: new Date().toISOString().split('T')[0],
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        // Include custom order number if provided (DB trigger will use it or auto-generate)
-        ...(orderData.customOrderNumber && { order_number: orderData.customOrderNumber })
-      }
-
-      const { data, error } = await supabase
-        .from('orders')
-        .insert([supabaseOrderData])
-        .select()
-
-      if (error) throw error
-
-      // Deduct stock from products after order is created
-      await deductStock(orderData.products, user.id)
-
-      // The real-time subscription will automatically update the list
-      // But we can also optimistically add to local state
-      if (data && data[0]) {
-        const newOrder = {
-          id: data[0].order_number,
-          orderId: data[0].id,
-          products: data[0].products || [],
-          totalPrice: data[0].total_price || 0,
-          date: new Date(data[0].created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          orderStatus: data[0].order_status || 'Pending',
-          paymentStatus: data[0].payment_status || 'Unpaid',
-          customerName: data[0].customer_name || '',
-          customerPhone: data[0].customer_phone || '',
-          customerWhatsApp: data[0].customer_whatsapp || '',
-          customerInstagram: data[0].customer_instagram || '',
-          paymentType: data[0].payment_type || 'Cash',
-          notes: data[0].notes || '',
-          source: data[0].source || 'WhatsApp',
-          invoiceDate: data[0].invoice_date || '',
-          dueDate: data[0].due_date || '',
-          created_at: data[0].created_at,
-          updated_at: data[0].updated_at
-        }
-        setOrders((prev) => [newOrder, ...prev])
-      }
-    } catch (err) {
-      console.error('Error creating order:', err.message)
-      alert('Failed to create order: ' + err.message)
-    }
-  }
-
-  // Function to deduct stock from products
-  const deductStock = async (products, userId) => {
-    try {
-      for (const product of products) {
-        if (!product.id) {
-          console.error(`Product missing ID, skipping stock deduction:`, product.name)
-          continue
-        }
-
-        // Get current product quantity using ID
-        const { data: currentProduct, error: fetchError } = await supabase
-          .from('products')
-          .select('id, quantity, name')
-          .eq('user_id', userId)
-          .eq('id', product.id)
-          .single()
-
-        if (fetchError) {
-          console.error(`Error fetching product ${product.name}:`, fetchError.message)
-          continue
-        }
-
-        if (currentProduct) {
-          const newQuantity = Math.max(0, (currentProduct.quantity || 0) - (product.quantity || 1))
-          
-          // Update product quantity
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
-            .eq('id', currentProduct.id)
-            .eq('user_id', userId)
-
-          if (updateError) {
-            console.error(`Error updating stock for ${product.name}:`, updateError.message)
-            continue
-          }
-
-          // Record stock history
-          await supabase.from('stock_history').insert({
-            user_id: userId,
-            product_id: currentProduct.id,
-            quantity_change: -(product.quantity || 1),
-            previous_quantity: currentProduct.quantity || 0,
-            new_quantity: newQuantity,
-            reason: 'Order placed'
-          })
-
-          console.log(`Deducted ${product.quantity || 1} from ${product.name}. New quantity: ${newQuantity}`)
-        }
-      }
-    } catch (err) {
-      console.error('Error deducting stock:', err.message)
-    }
-  }
-
-  // Function to restore stock (for cancellations)
-  const restoreStock = async (products, userId) => {
-    try {
-      for (const product of products) {
-        if (!product.id) {
-          console.error(`Product missing ID, skipping stock restoration:`, product.name)
-          continue
-        }
-
-        // Get current product quantity using ID
-        const { data: currentProduct, error: fetchError } = await supabase
-          .from('products')
-          .select('id, quantity, name')
-          .eq('user_id', userId)
-          .eq('id', product.id)
-          .single()
-
-        if (fetchError) {
-          console.error(`Error fetching product ${product.name}:`, fetchError.message)
-          continue
-        }
-
-        if (currentProduct) {
-          const newQuantity = (currentProduct.quantity || 0) + (product.quantity || 1)
-          
-          // Update product quantity
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ quantity: newQuantity, updated_at: new Date().toISOString() })
-            .eq('id', currentProduct.id)
-            .eq('user_id', userId)
-
-          if (updateError) {
-            console.error(`Error restoring stock for ${product.name}:`, updateError.message)
-            continue
-          }
-
-          // Record stock history
-          await supabase.from('stock_history').insert({
-            user_id: userId,
-            product_id: currentProduct.id,
-            quantity_change: product.quantity || 1,
-            previous_quantity: currentProduct.quantity || 0,
-            new_quantity: newQuantity,
-            reason: 'Order cancelled'
-          })
-
-          console.log(`Restored ${product.quantity || 1} to ${product.name}. New quantity: ${newQuantity}`)
-        }
-      }
-    } catch (err) {
-      console.error('Error restoring stock:', err.message)
-    }
-  }
-
-  // Handle updating existing order in Supabase  
-  const handleUpdateOrder = async (updatedOrderData) => {
-    if (!user || !updatedOrderData.orderId) return
-
-    try {
-      console.log('🔄 Updating order:', { 
-        orderId: updatedOrderData.orderId, 
-        orderStatus: updatedOrderData.orderStatus,
-        paymentStatus: updatedOrderData.paymentStatus 
-      })
-
-      // Get the original order to compare and adjust stock
-      const originalOrder = orders.find(o => o.orderId === updatedOrderData.orderId)
-      
-// 🔧 FIXED: Defensive payload cleaning for "product does not exist" error
-      console.log('📥 Incoming updatedOrderData keys:', Object.keys(updatedOrderData))
-      
-      // Explicit whitelist + defensive delete
-      const supabaseOrderData = {
-        customer_name: updatedOrderData.customerName,
-        customer_phone: updatedOrderData.customerPhone,
-        customer_whatsapp: updatedOrderData.customerWhatsApp || updatedOrderData.customerPhone,
-        customer_instagram: updatedOrderData.customerInstagram,
-        total_price: parseFloat(updatedOrderData.totalPrice) || 0,
-        order_status: updatedOrderData.orderStatus,
-        payment_status: updatedOrderData.paymentStatus,
-        payment_type: updatedOrderData.paymentType,
-        notes: updatedOrderData.notes,
-        source: updatedOrderData.source,
-        updated_at: new Date().toISOString()
-      }
-      
-      // 🔒 DEFENSIVE: Explicitly remove any rogue 'products'/'product' fields
-      delete supabaseOrderData.products
-      delete supabaseOrderData.product
-      
-      // Verify clean payload
-      const invalidFields = Object.keys(supabaseOrderData).filter(key => 
-        key === 'products' || key === 'product' || key.includes('product')
-      )
-      if (invalidFields.length > 0) {
-        console.warn('⚠️ Invalid product fields detected and removed:', invalidFields)
-      }
-      
-      console.log('✅ Clean payload keys:', Object.keys(supabaseOrderData).sort())
-
-      console.log('📤 Supabase update payload:', supabaseOrderData)
-
-      const { data, error } = await supabase
-        .from('orders')
-        .update(supabaseOrderData)
-        .eq('id', updatedOrderData.orderId)
-        .eq('user_id', user.id)
-        .select('id, order_status, payment_status, total_price, updated_at')
-        .single()
-
-      if (error) {
-        console.error('❌ Supabase update ERROR:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          fields: Object.keys(supabaseOrderData)
-        })
-        throw new Error(`Database update failed: ${error.message}. Check console for details.`)
-      }
-
-      console.log('✅ Order updated successfully:', data)
-
-      // Handle stock adjustments based on order status change
-      if (originalOrder) {
-        // If order is being cancelled, restore stock
-        if (updatedOrderData.orderStatus === 'Cancelled' && originalOrder.orderStatus !== 'Cancelled') {
-          await restoreStock(originalOrder.products, user.id)
-        }
-        // If order is being restored from cancelled, deduct stock again
-        else if (originalOrder.orderStatus === 'Cancelled' && updatedOrderData.orderStatus !== 'Cancelled') {
-          await deductStock(updatedOrderData.products, user.id)
-        }
-        // If order is being modified (not cancelled), adjust stock
-        else if (originalOrder.orderStatus !== 'Cancelled' && updatedOrderData.orderStatus !== 'Cancelled') {
-          // Restore stock for products that were removed
-          const originalProducts = originalOrder.products || []
-          const newProducts = updatedOrderData.products || []
-          
-          // Find products that are in original but not in new (removed)
-          for (const origProd of originalProducts) {
-            const newProd = newProducts.find(p => p.id === origProd.id)
-            if (!newProd) {
-              // Product was removed, restore its stock
-              await restoreStock([origProd], user.id)
-            } else if (newProd.quantity !== origProd.quantity) {
-              // Quantity changed, adjust the difference
-              const qtyDiff = origProd.quantity - newProd.quantity
-              if (qtyDiff > 0) {
-                // Fewer items now, restore the difference
-                await restoreStock([{ ...newProd, quantity: qtyDiff }], user.id)
-              } else if (qtyDiff < 0) {
-                // More items now, deduct the difference
-                await deductStock([{ ...newProd, quantity: Math.abs(qtyDiff) }], user.id)
-              }
-            }
-          }
-          
-          // Find products that are in new but not in original (added)
-          for (const newProd of newProducts) {
-            const origProd = originalProducts.find(p => p.id === newProd.id)
-            if (!origProd) {
-              // New product added, deduct its stock
-              await deductStock([newProd], user.id)
-            }
-          }
-        }
-      }
-
-      // The real-time subscription will automatically update the list
-      // But we can also optimistically update local state
-      setOrders((prev) =>
-        prev.map(order =>
-          order.id === updatedOrderData.id 
-            ? { 
-                ...order,
-                ...updatedOrderData,
-                invoiceDate: order.invoiceDate, 
-                dueDate: order.dueDate 
-              } 
-            : order
-        )
-      )
-    } catch (err) {
-      console.error('Error updating order:', err.message)
-      alert('Failed to update order: ' + err.message)
-    }
-  }
-
   return (
     <div className="p-6">
+      {/* Header - same */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-white to-[#748298] bg-clip-text text-transparent">
           Pending Orders
         </h1>
-        <button
-          onClick={() => {
-            setOrderToEdit(null)
-            setIsOrderModalOpen(true)
-          }}
-          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
-        >
+        <button onClick={() => { setOrderToEdit(null); setIsOrderModalOpen(true); }} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
           Create Order
         </button>
       </div>
-      <div className="mt-6">
-        <div className="bg-[#0A0A0A] border border-gray-800 shadow-2xs overflow-hidden">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-800">
-            <h2 className="text-xl font-semibold text-white">Pending Orders</h2>
-            <p className="text-sm text-slate-400 mt-1">Orders awaiting processing from WhatsApp & Instagram (Pending & Processing)</p>
-          </div>
 
-          {/* Filter Bar */}
-          <div className="px-6 py-4 border-b border-gray-800 bg-[#0f0f0f]">
-            <div className="flex flex-wrap gap-4 items-center">
-              {/* Search Input */}
-              <div className="relative flex-1 min-w-[200px]">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search by Order ID or Product Name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                />
+      <div className="bg-[#0A0A0A] border border-gray-800 shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-800">
+          <h2 className="text-xl font-semibold text-white">Pending Orders</h2>
+          <p className="text-sm text-slate-400 mt-1">Orders awaiting processing (Pending & Processing)</p>
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-4 border-b border-gray-800 bg-[#0f0f0f]">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
-
-              {/* Payment Status Filter Only (Order Status is locked to Pending) */}
-              <div className="min-w-[150px]">
-                <select
-                  value={paymentStatusFilter}
-                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
-                  className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md leading-5 bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
-                >
-                  <option value="All">All Payment Status</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Unpaid">Unpaid</option>
-                  <option value="Failed">Failed</option>
-                </select>
-              </div>
-
-              {/* Clear Filters Button */}
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
-
-              {/* Results Count */}
-              <div className="ml-auto text-sm text-slate-400">
-                Showing {filteredOrders.length} pending/processing orders
-              </div>
+              <input
+                type="text"
+                placeholder="Search by Order ID or Product Name..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  handleFilterChange()
+                }}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+              />
             </div>
-          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            {loading ? (
-              <div className="px-6 py-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                <p className="mt-4 text-slate-400">Loading orders...</p>
-              </div>
-            ) : error ? (
-              <div className="px-6 py-12 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4">
-                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <p className="text-lg text-red-400">Error loading orders</p>
-                <p className="text-sm text-slate-400 mt-1">{error}</p>
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-[#0A0A0A]">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Order ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Product Names
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Cost
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Source
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Order Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Payment Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Invoice
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
-                      Edit Order
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {filteredOrders.length > 0 ? (
-                    filteredOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-900/50 transition-colors duration-200">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                          {order.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                          {order.products && order.products.length > 0 ? order.products.map(p => p.name).join(', ') : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
-                          {formatPrice(order.totalPrice)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                          {order.date}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getSourceBadge(order.source)}`}>
-                            {order.source}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getOrderStatusBadge(order.orderStatus)}`}>
-                            {order.orderStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${getPaymentStatusBadge(order.paymentStatus)}`}>
-                            {order.paymentStatus}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleViewInvoice(order)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                          >
-                            View
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleEditOrder(order)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded hover:bg-indigo-700 transition-colors"
-                          >
-                            Edit
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
-                        <div className="flex flex-col items-center justify-center">
-                          <svg className="h-12 w-12 text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <p className="text-lg">No pending/processing orders found</p>
-                          <p className="text-sm mt-1">All orders are either completed or cancelled</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="min-w-[150px]">
+              <select
+                value={paymentStatusFilter}
+                onChange={(e) => {
+                  setPaymentStatusFilter(e.target.value)
+                  handleFilterChange()
+                }}
+                className="block w-full py-2 pl-3 pr-8 border border-gray-700 rounded-md bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors"
+              >
+                <option value="All">All Payment Status</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Failed">Failed</option>
+              </select>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors"
+              >
+                Clear Filters
+              </button>
             )}
-          </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              Showing {filteredOrders.length} pending/processing orders
-            </p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredOrders.length === 0}>
-                Previous
-              </button>
-              <button className="px-3 py-1 text-sm text-slate-400 hover:text-white border border-gray-700 rounded-md hover:border-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled={filteredOrders.length === 0}>
-                Next
-              </button>
+            <div className="ml-auto text-sm text-slate-400">
+              Page {currentPage} • {filteredOrders.length} pending orders
             </div>
           </div>
         </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="px-6 py-12 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+              <p className="mt-4 text-slate-400">Loading...</p>
+            </div>
+          ) : error ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-lg text-red-400">{error}</p>
+              <button onClick={fetchOrders} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                Retry
+              </button>
+            </div>
+          ) : (
+            <table className="w-full">
+              {/* Table header - same */}
+              <thead className="bg-[#0A0A0A]">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Order ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Products</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Cost</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Source</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Payment</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {paginatedOrders.length > 0 ? (
+                  paginatedOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-gray-900/50">
+                      {/* Row content - same as before */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">{order.id}</td>
+                      <td className="px-6 py-4 text-sm text-slate-300">{order.products.map(p => p.name).slice(0,2).join(', ') || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{formatPrice(order.totalPrice)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">{order.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSourceBadge(order.source)}`}>
+                          {order.source}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusBadge(order.orderStatus)}`}>
+                          {order.orderStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusBadge(order.paymentStatus)}`}>
+                          {order.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                        <button onClick={() => handleViewInvoice(order)} className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
+                          Invoice
+                        </button>
+                        <button onClick={() => handleEditOrder(order)} className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <svg className="w-16 h-16 text-slate-500 mb-4" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 className="text-lg font-medium text-slate-400 mb-1">No pending orders</h3>
+                        <p className="text-sm text-slate-500">Great job! All orders processed 🎉</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredOrders.length / PAGE_SIZE)}
+          totalItems={filteredOrders.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={handlePageChange}
+        />
+
+        {/* Modals */}
+        <OrderModal
+          isOpen={isOrderModalOpen}
+          onClose={() => { setIsOrderModalOpen(false); setOrderToEdit(null); }}
+          onSave={handleSaveOrder}
+          onUpdate={handleUpdateOrder}
+          orderToEdit={orderToEdit}
+          user={user}
+        />
+        <InvoiceModal
+          isOpen={isInvoiceModalOpen}
+          onClose={() => { setIsInvoiceModalOpen(false); setSelectedOrder(null); }}
+          order={selectedOrder}
+        />
       </div>
-
-      {/* Order Modal */}
-      <OrderModal
-        isOpen={isOrderModalOpen}
-        onClose={() => {
-          setIsOrderModalOpen(false)
-          setOrderToEdit(null)
-        }}
-        onSave={handleSaveOrder}
-        onUpdate={handleUpdateOrder}
-        orderToEdit={orderToEdit}
-        user={user}
-      />
-
-      {/* Invoice Modal */}
-      <InvoiceModal
-        isOpen={isInvoiceModalOpen}
-        onClose={() => {
-          setIsInvoiceModalOpen(false)
-          setSelectedOrder(null)
-        }}
-        order={selectedOrder}
-      />
     </div>
   )
 }

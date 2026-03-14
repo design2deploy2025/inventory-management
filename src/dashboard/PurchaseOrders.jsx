@@ -8,8 +8,13 @@ const PurchaseOrders = () => {
   
   // State for purchase orders from Supabase
   const [purchaseOrders, setPurchaseOrders] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Pagination
+  const PAGE_SIZE = 10
+  const [currentPage, setCurrentPage] = useState(1)
   
   const [isPOModalOpen, setIsPOModalOpen] = useState(false)
   const [selectedPO, setSelectedPO] = useState(null)
@@ -19,21 +24,43 @@ const PurchaseOrders = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [poStatusFilter, setPoStatusFilter] = useState('All')
 
-  // Fetch purchase orders from Supabase (table: purchase_orders)
-  const fetchPurchaseOrders = async () => {
+  // Fetch purchase orders with pagination from Supabase (table: purchase_orders)
+  const fetchPurchaseOrders = async (page = currentPage, resetTotal = false) => {
     if (!user) return
     
     try {
       setLoading(true)
       setError(null)
-      
-      const { data, error: fetchError } = await supabase
-        .from('purchase_orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
 
-      if (fetchError) throw fetchError
+      const from = (page - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
+      let query = supabase
+        .from('purchase_orders')
+        .select('*', { count: resetTotal ? 'exact' : 'head' })
+        .eq('user_id', user.id)
+
+      // Search: PO ID (po_number), supplier_name, products (JSON contains)
+      if (searchTerm) {
+        query = query.or(`po_number.ilike.%${searchTerm}%,supplier_name.ilike.%${searchTerm}%`)
+      }
+
+      // Status filter
+      if (poStatusFilter !== 'All') {
+        query = query.eq('status', poStatusFilter)
+      }
+
+      query = query
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      const { data, count, error } = await query
+
+      if (error) throw error
+
+      if (resetTotal && count !== null) {
+        setTotalCount(count)
+      }
 
       // Transform data
       const transformedPOs = data?.map(po => ({
@@ -60,7 +87,7 @@ const PurchaseOrders = () => {
 
   useEffect(() => {
     if (user) {
-      fetchPurchaseOrders()
+      fetchPurchaseOrders(1, true)
     }
   }, [user])
 
@@ -103,15 +130,7 @@ const PurchaseOrders = () => {
     }
   }
 
-  // Filtered POs
-  const filteredPOs = useMemo(() => {
-    return purchaseOrders.filter(po => 
-      po.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      po.products.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (poStatusFilter === 'All' || po.status === poStatusFilter)
-    )
-  }, [purchaseOrders, searchTerm, poStatusFilter])
+
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -120,9 +139,24 @@ const PurchaseOrders = () => {
     }).format(price)
   }
 
+  // Clear all filters and reset pagination
   const clearFilters = () => {
     setSearchTerm('')
     setPoStatusFilter('All')
+    setCurrentPage(1)
+    fetchPurchaseOrders(1, true)
+  }
+
+  // Handle filter changes - reset to page 1
+  const handleFilterChange = () => {
+    setCurrentPage(1)
+    fetchPurchaseOrders(1, true)
+  }
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    fetchPurchaseOrders(page)
   }
 
   const hasActiveFilters = searchTerm !== '' || poStatusFilter !== 'All'
@@ -266,13 +300,19 @@ const PurchaseOrders = () => {
                 type="text"
                 placeholder="Search PO ID, Supplier, Products..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  handleFilterChange()
+                }}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md bg-[#1a1a1a] text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm transition-colors"
               />
             </div>
             <select
               value={poStatusFilter}
-              onChange={(e) => setPoStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setPoStatusFilter(e.target.value)
+                handleFilterChange()
+              }}
               className="min-w-[150px] py-2 pl-3 pr-8 border border-gray-700 rounded-md bg-[#1a1a1a] text-slate-300 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm"
             >
               <option value="All">All Status</option>
@@ -287,7 +327,7 @@ const PurchaseOrders = () => {
               </button>
             )}
             <div className="ml-auto text-sm text-slate-400">
-              {filteredPOs.length} of {purchaseOrders.length} POs
+              {purchaseOrders.length} of {totalCount} POs
             </div>
           </div>
         </div>
@@ -320,7 +360,7 @@ const PurchaseOrders = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {filteredPOs.map((po) => (
+                {purchaseOrders.map((po) => (
                   <tr key={po.id} className="hover:bg-gray-900/50">
                     <td className="px-6 py-4 text-sm font-medium text-white">{po.id}</td>
                     <td className="px-6 py-4 text-sm text-slate-300">{po.supplier}</td>
@@ -352,7 +392,7 @@ const PurchaseOrders = () => {
                     </td>
                   </tr>
                 ))}
-                {filteredPOs.length === 0 && (
+                {purchaseOrders.length === 0 && (
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
                       <svg className="h-12 w-12 mx-auto mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
