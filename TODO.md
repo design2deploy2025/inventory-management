@@ -10,7 +10,8 @@
 - [x] Step 4: Test integration (npm run dev, verify new tab, basic functionality)
 - [x] Step 5: Backend - Add Supabase table/migration if needed for purchase_orders (created migrations/create_purchase_orders_table.sql)
 
-- [ ] Step 6: Implement stock update logic on receive
+- [x] Step 6: Implement stock update logic on receive
+
 
 Current progress: Starting Step 1.
 

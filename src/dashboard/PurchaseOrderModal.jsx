@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const PurchaseOrderModal = ({ isOpen, onClose, onSave, poToEdit, user }) => {
+const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user }) => {
   const [products, setProducts] = useState([])
   const [suppliers, setSuppliers] = useState([])
 

@@ -185,12 +185,45 @@ const PurchaseOrders = () => {
   }
 
   const handleSavePO = async (poData) => {
-    // Implementation similar to handleSaveOrder in MainTable, but for purchase_orders table
-    // Omitted for brevity - would insert into purchase_orders and handle supplier/products
-    console.log('Saving PO:', poData)
-    // Actual save logic here...
-    setIsPOModalOpen(false)
-    fetchPurchaseOrders()
+    if (!user) return;
+
+    try {
+      const supabaseData = {
+        user_id: user.id,
+        supplier_name: poData.supplierName,
+        products: poData.selectedProducts,
+        total_cost: poData.totalCost,
+        status: poData.status,
+        expected_delivery: poData.expectedDelivery,
+        notes: poData.notes
+      };
+
+      let result;
+      if (poToEdit) {
+        // Update
+        const { error } = await supabase
+          .from('purchase_orders')
+          .update(supabaseData)
+          .eq('id', poToEdit.poId)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        // Create
+        result = await supabase
+          .from('purchase_orders')
+          .insert([supabaseData])
+          .select()
+          .single();
+        if (!result.data) throw new Error('Failed to create PO');
+      }
+
+      setIsPOModalOpen(false);
+      setPoToEdit(null);
+      fetchPurchaseOrders();
+    } catch (err) {
+      console.error('Error saving PO:', err);
+      alert(`Failed to save PO: ${err.message}`);
+    }
   }
 
   return (
@@ -340,10 +373,11 @@ const PurchaseOrders = () => {
       <PurchaseOrderModal
         isOpen={isPOModalOpen}
         onClose={() => {
-          setIsPOModalOpen(false)
-          setPoToEdit(null)
+          setIsPOModalOpen(false);
+          setPoToEdit(null);
         }}
         onSave={handleSavePO}
+        onUpdate={handleSavePO}
         poToEdit={poToEdit}
         user={user}
       />
