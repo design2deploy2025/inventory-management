@@ -15,6 +15,7 @@ import CustomersTable from '../dashboard/CustomersTable'
 import ProductDetails from '../dashboard/ProductDetails'
 import StatCards from '../dashboard/StatCards'
 import Analytics from '../dashboard/pages/Analytics'
+import PurchaseOrders from '../dashboard/PurchaseOrders'
 
 const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState('dashboard')
@@ -26,8 +27,11 @@ const Dashboard = () => {
         return <DashboardHome />
       case 'orders':
         return <MainTable />
+      case 'purchase-orders':
+        return <PurchaseOrders />
       case 'products':
         return <ProductDetails   />
+
       case 'analytics':
         return <Analytics   />
       case 'customers':

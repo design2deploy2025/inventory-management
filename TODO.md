@@ -1,26 +1,21 @@
-# Product Column Error Fix - COMPLETED ✅
+# Purchase Orders Feature Implementation
 
-## Status: ✅ RESOLVED
-**Date:** Current  
-**Issue:** Supabase error `column "product" does not exist` on order updates  
-**Root Cause:** Leftover "product" column in orders table  
+## Plan Steps:
+- [x] Step 1: Create src/dashboard/PurchaseOrders.jsx component (table for incoming orders, stock updates)
+- [x] Step 1.5: Create src/dashboard/PurchaseOrderModal.jsx (modal for PO CRUD)
 
-## What Was Fixed:
-```
-ALTER TABLE orders DROP COLUMN IF EXISTS "product";
-```
-**Verified:** Only `products` column exists now ✓
+- [x] Step 2: Update src/dashboard/SideBar.jsx (add 'purchase-orders' button under orders)
+- [x] Step 3: Update src/pages/Dashboard.jsx (add import and render case for purchase-orders)
 
-## Test Results Expected:
-✅ No more "column product does not exist" errors  
-✅ Order updates work perfectly  
-✅ Real-time sync working  
-✅ Stock adjustments on status changes  
+- [x] Step 4: Test integration (npm run dev, verify new tab, basic functionality)
+- [x] Step 5: Backend - Add Supabase table/migration if needed for purchase_orders (created migrations/create_purchase_orders_table.sql)
 
-## Test Now:
-1. Restart dev server: `npm run dev`
-2. Edit any pending order  
-3. ✅ Save → No errors in console  
+- [ ] Step 6: Implement stock update logic on receive
 
-**All done! Production-ready fix.** 🚀
+Current progress: Starting Step 1.
+
+**Assumptions:** 
+- UI styled like MainTable.jsx
+- Fetches from supabase 'purchase_orders' table (PO ID, supplier, items, qty, status)
+- Receive action: increment product stock
 
