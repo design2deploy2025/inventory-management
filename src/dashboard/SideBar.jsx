@@ -68,9 +68,10 @@ const SideBar = ({ currentPage, onPageChange }) => {
                       className={getLinkClass('purchase-orders')}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3H6.75a3 3 0 003-3M2.25 3h1.386c.51 0 .955.3
-43 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3H6.75a3 3 0 003-3M3.783 4.977a.916.916 0 01.927-.736 1.946 1.946 0 013.833 0a.916 .916 0 01.927 .736l.747 2.8a.916 .916 0 01-.927 .736 1.946 1.946 0 01-3.833 0a.916 .916 0 01-.927 -.736l-.747 -2.8zM20.25 12.75V7.5a3 3 0 00-3-3H16.5a3 3 0 00-3 3v5.25m6 3a3 3 0 003-3m-3 3h.008v.008h-.008v-.008zm-12 3a3 3 0 003-3m-3 3h.008v.008h-.008v-.008z" />
-                        </svg>
+  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.5l2.25 10.5h11.25l2.25-7.5H6.75"/>
+  <circle cx="9" cy="20" r="1.5"/>
+  <circle cx="18" cy="20" r="1.5"/>
+</svg>
                         <span className="mx-2 text-sm font-medium">Purchase orders</span>
                     </button>
 
