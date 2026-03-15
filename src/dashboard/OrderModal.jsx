@@ -275,7 +275,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       } else {
         return {
           ...prev,
-          selectedProducts: [...prev.selectedProducts, { ...product, quantity: 1 }],
+selectedProducts: [...prev.selectedProducts, { ...product, quantity: 1, discountPercent: 0 }],
         }
       }
     })
@@ -299,6 +299,17 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       ...prev,
       selectedProducts: prev.selectedProducts.map((p) =>
         p.id === productId ? { ...p, price: newPrice } : p
+      ),
+    }))
+  }
+
+  // Handle individual product discount change
+  const handleDiscountChange = (productId, discount) => {
+    const discountPercent = Math.max(0, Math.min(100, parseFloat(discount) || 0))
+    setFormData((prev) => ({
+      ...prev,
+      selectedProducts: prev.selectedProducts.map((p) =>
+        p.id === productId ? { ...p, discountPercent: discountPercent } : p
       ),
     }))
   }
@@ -408,10 +419,10 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
     }
   }
 
-  // Calculate total price
-  const calculateTotal = () => {
+  // Calculate discounted total price
+  const calculateDiscountedTotal = () => {
     return formData.selectedProducts.reduce((total, product) => {
-      return total + (product.price * product.quantity)
+      return total + (product.price * product.quantity * (1 - ((product.discountPercent || 0) / 100)))
     }, 0)
   }
 
@@ -503,7 +514,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
       paymentType: formData.paymentType,
       paymentStatus: formData.paymentStatus,
       orderStatus: formData.orderStatus,
-      totalPrice: calculateTotal(),
+      totalPrice: calculateDiscountedTotal(),
       notes: formData.notes,
       source: formData.source,
       date: isEditMode 
@@ -1038,26 +1049,40 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                                   </div>
                                 </div>
 
-                                {/* Price Override */}
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-slate-400">Price:</span>
-                                  <div className="relative">
-                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
+                                {/* Price & Discount */}
+                                <div className="flex items-center gap-3">
+                                  {/* Price */}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-slate-400">₹</span>
                                     <input
                                       type="number"
                                       min="0"
                                       step="0.01"
                                       value={product.price}
                                       onChange={(e) => handlePriceChange(product.id, e.target.value)}
-                                      className="w-20 pl-5 pr-2 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                                      className="w-16 pl-4 pr-1 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                                     />
+                                  </div>
+                                  
+                                  {/* Discount */}
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      value={product.discountPercent || 0}
+                                      onChange={(e) => handleDiscountChange(product.id, e.target.value)}
+                                      className="w-14 px-1 py-1.5 text-sm bg-gray-800 border border-gray-600 rounded-lg text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                                    />
+                                    <span className="text-xs text-slate-400">%</span>
                                   </div>
                                 </div>
 
                                 {/* Line Total */}
                                 <div className="text-right min-w-[90px]">
                                   <p className="text-sm font-bold text-white">
-                                    ₹{(product.price * product.quantity).toFixed(2)}
+                                    ₹{((product.price * product.quantity * (1 - ((product.discountPercent || 0) / 100))).toFixed(2))}
                                   </p>
                                 </div>
 
@@ -1129,7 +1154,7 @@ const OrderModal = ({ isOpen, onClose, onSave, onUpdate, orderToEdit, user }) =>
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-medium text-white">Total</span>
                       <span className="text-3xl font-bold text-white tracking-tight">
-                        ₹{calculateTotal().toFixed(2)}
+                        ₹{calculateDiscountedTotal().toFixed(2)}
                       </span>
                     </div>
                   </div>

@@ -1,21 +1,24 @@
-# Pagination Fix TODO
+# Discount Feature Implementation - Create Order Modal
+Status: In Progress
 
-## Plan Steps:
-- [x] Step 1: CustomersTable.jsx ✓ 
-- [x] Step 2: PurchaseOrders.jsx ✓ 
-- [x] Step 3: MainTable.jsx ✓ Fixed client-side page change (no unnecessary refetch)
-- [ ] Step 4: Test all tables pagination
-- [ ] Step 5: Check real-time updates
-- [ ] Step 6: Complete
+## Plan Summary
+Add per-product discount percentage input (0-100%) in OrderModal selected products section.
+- Initialize discountPercent: 0 for new products
+- Add discount input UI per product row (after price)
+- Update line total: price * qty * (1 - discount/100)
+- Update grand total calculation
+- Save discountPercent in products JSON to DB
 
-**Progress: Steps 1-3 done. Ready for testing!**
+## Steps
+- [x] Step 1: Add discountPercent init in handleProductToggle
+- [x] Step 2: Create handleDiscountChange handler  
+- [x] Step 3: Update UI - add discount input in selected products row
+- [x] Step 4: Update line total display formula
+- [x] Step 5: Rename/update calculateTotal → calculateDiscountedTotal
+- [x] Step 6: Update all total references
+- [ ] Step 7: Test create order with discounts
+- [ ] Step 8: Verify DB storage
+- [ ] Complete: attempt_completion
 
----
+Current Step: 7/8
 
-# Fix Duplicate PAGE_SIZE Declaration (completed)
-
-## Steps:
-- [x] Step 1: Edit PendingOrdersTable.jsx to remove redundant PAGE_SIZE declaration ✓
-- [ ] Step 2: Verify the fix resolves the compilation error
-- [ ] Step 3: Test pagination functionality remains intact
-- [ ] Step 4: Complete and close task

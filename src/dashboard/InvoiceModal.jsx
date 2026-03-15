@@ -57,10 +57,10 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
     }).format(price)
   }
 
-  // Calculate subtotal
+  // Calculate subtotal (respects discounts)
   const calculateSubtotal = () => {
     return order.products.reduce((total, product) => {
-      return total + (product.price * product.quantity)
+      return total + (product.price * product.quantity * (1 - ((product.discountPercent || 0) / 100)))
     }, 0)
   }
 
@@ -78,14 +78,18 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
   const handleDownloadPDF = () => {
     // Create a printable version
     const printWindow = window.open('', '_blank')
-    const productsHTML = order.products.map(product => `
+    const productsHTML = order.products.map(product => {
+      const discountPercent = (product.discountPercent || 0).toFixed(1)
+      const lineTotal = product.price * product.quantity * (1 - (product.discountPercent || 0) / 100)
+      return `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${product.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${product.name}${discountPercent > 0 ? ` (${discountPercent}% off)` : ''}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${product.quantity}</td>
         <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatPrice(product.price)}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatPrice(product.price * product.quantity)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatPrice(lineTotal)}</td>
       </tr>
-    `).join('')
+    `
+    }).join('')
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -308,14 +312,14 @@ const InvoiceModal = ({ isOpen, onClose, order }) => {
               {/* Totals - Simplified */}
               <div className="flex justify-end mb-5">
                 <div className="w-48">
-                  <div className="flex justify-between py-1.5 text-sm border-b border-gray-100">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-medium">{formatPrice(calculateSubtotal())}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b-2 border-gray-800 mt-1">
-                    <span className="font-bold text-gray-900">Total</span>
-                    <span className="font-bold text-lg">{formatPrice(calculateTotal())}</span>
-                  </div>
+              <div className="flex justify-between py-1.5 text-sm border-b border-gray-100">
+                <span className="text-gray-500">Total (incl. discounts)</span>
+                <span className="font-medium">{formatPrice(calculateSubtotal())}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b-2 border-gray-800 mt-1">
+                <span className="font-bold text-gray-900">Final Total</span>
+                <span className="font-bold text-lg">{formatPrice(calculateTotal())}</span>
+              </div>
                 </div>
               </div>
 
