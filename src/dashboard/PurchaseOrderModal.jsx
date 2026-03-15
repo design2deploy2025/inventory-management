@@ -191,11 +191,29 @@ const decrementQuantity = (productId) => {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-[#0A0A0A] border border-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-800">
-          <h2 className="text-xl font-bold text-white">
-            {poToEdit ? 'Edit Purchase Order' : 'New Purchase Order'}
-          </h2>
-        </div>
+        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+  <h2 className="text-xl font-bold text-white">
+    {poToEdit ? 'Edit Purchase Order' : 'New Purchase Order'}
+  </h2>
+
+  <button
+    type="button"
+    onClick={onClose}
+    className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+    aria-label="Close modal"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-5 h-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+</div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {/* Order Details Section */}
