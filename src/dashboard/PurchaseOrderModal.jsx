@@ -10,8 +10,12 @@ const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user 
     selectedProducts: [],
     expectedDelivery: '',
     notes: '',
-    status: 'Pending'
+    status: 'Pending',
+    paymentStatus: 'Unpaid'
   })
+
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch products
   useEffect(() => {
@@ -25,12 +29,71 @@ const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user 
     }
   }, [isOpen, user])
 
+  // Populate form when editing
+  useEffect(() => {
+    if (poToEdit && isOpen) {
+      setFormData({
+        supplierName: poToEdit.supplierName || poToEdit.supplier || '',
+        selectedProducts: poToEdit.products || poToEdit.selectedProducts || [],
+        expectedDelivery: poToEdit.expectedDate ? poToEdit.expectedDate.split('/').reverse().join('-') : '',
+        notes: poToEdit.notes || '',
+        status: poToEdit.status || 'Pending',
+        paymentStatus: poToEdit.paymentStatus || 'Unpaid'
+      })
+      setErrors({})
+    } else if (isOpen) {
+      setFormData({
+        supplierName: '',
+        selectedProducts: [],
+        expectedDelivery: '',
+        notes: '',
+        status: 'Pending',
+        paymentStatus: 'Unpaid'
+      })
+      setErrors({})
+    }
+  }, [poToEdit, isOpen])
+
+// Status badges preview
+  const getStatusBadgeClass = (status) => {
+    const base = 'inline-flex px-3 py-1 rounded-full text-xs font-semibold border'
+    switch (status) {
+      case 'Received':
+        return `${base} bg-emerald-500/10 text-emerald-400 border-emerald-500/30`
+      case 'Pending':
+        return `${base} bg-yellow-500/10 text-yellow-400 border-yellow-500/30`
+      case 'Cancelled':
+        return `${base} bg-red-500/10 text-red-400 border-red-500/30`
+      case 'Partially Received':
+        return `${base} bg-blue-500/10 text-blue-400 border-blue-500/30`
+      default:
+        return `${base} bg-gray-500/10 text-gray-400 border-gray-500/30`
+    }
+  }
+
+  const getPaymentStatusBadgeClass = (status) => {
+    const base = 'inline-flex px-3 py-1 rounded-full text-xs font-semibold border'
+    switch (status) {
+      case 'Paid':
+        return `${base} bg-emerald-500/10 text-emerald-400 border-emerald-500/30`
+      case 'Unpaid':
+        return `${base} bg-orange-500/10 text-orange-400 border-orange-500/30`
+      case 'Partially Paid':
+        return `${base} bg-yellow-500/10 text-yellow-400 border-yellow-500/30`
+      default:
+        return `${base} bg-gray-500/10 text-gray-400 border-gray-500/30`
+    }
+  }
+
   // Simplified supplier list (can be extended)
   const availableSuppliers = ['Local Wholesaler', 'Main Supplier', 'Import Co.', 'Custom Supplier']
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
   }
 
   const handleProductToggle = (product) => {
@@ -79,33 +142,48 @@ const decrementQuantity = (productId) => {
     return formData.selectedProducts.reduce((total, p) => total + (p.price * p.quantity), 0)
   }
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {}
+    
+    if (!formData.supplierName.trim()) {
+      newErrors.supplierName = 'Supplier name is required'
+    }
+    
+    if (formData.selectedProducts.length === 0) {
+      newErrors.products = 'Please select at least one product'
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validation
-    if (!formData.supplierName.trim()) {
-      alert('Please enter a supplier name')
-      return
-    }
-    if (formData.selectedProducts.length === 0) {
-      alert('Please select at least one product')
-      return
-    }
+    if (!validateForm()) return
     
-    const poData = {
-      ...formData,
-      totalCost: calculateTotal(),
-      userId: user.id,
-      poToEditId: poToEdit?.poId
+    setIsSubmitting(true)
+    
+    try {
+      const poData = {
+        ...formData,
+        totalCost: calculateTotal(),
+        userId: user.id,
+        poToEditId: poToEdit?.poId
+      }
+      
+      // Ensure quantities are integers
+      poData.selectedProducts = poData.selectedProducts.map(p => ({
+        ...p,
+        quantity: parseInt(p.quantity) || 1
+      }))
+      
+      onSave(poData)
+    } catch (error) {
+      console.error('Submit error:', error)
+    } finally {
+      setIsSubmitting(false)
     }
-    
-    // Ensure quantities are integers
-    poData.selectedProducts = poData.selectedProducts.map(p => ({
-      ...p,
-      quantity: parseInt(p.quantity) || 1
-    }))
-    
-    onSave(poData)
   }
 
   if (!isOpen) return null
@@ -119,145 +197,237 @@ const decrementQuantity = (productId) => {
           </h2>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Supplier */}
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Supplier</label>
-            <input
-              type="text"
-              name="supplierName"
-              value={formData.supplierName}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-green-500"
-              list="suppliers"
-            />
-            <datalist id="suppliers">
-              {availableSuppliers.map(s => <option key={s} value={s} />)}
-            </datalist>
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+          {/* Order Details Section */}
+          <div className="space-y-6">
+            <div className="bg-gray-900/50 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 border-b border-gray-700 pb-3">Order Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="supplierName" className="block text-sm font-medium text-slate-400 mb-2">
+                    Supplier <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    id="supplierName"
+                    type="text"
+                    name="supplierName"
+                    value={formData.supplierName}
+                    onChange={handleChange}
+                    className={`w-full p-3 bg-gray-900 border rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
+                      errors.supplierName ? 'border-red-500 ring-red-400' : 'border-gray-700 hover:border-gray-500'
+                    }`}
+                    list="suppliers"
+                    aria-invalid={!!errors.supplierName}
+                    aria-describedby={errors.supplierName ? "supplier-error" : undefined}
+                  />
+                  {errors.supplierName && (
+                    <p id="supplier-error" className="mt-1 text-sm text-red-400">{errors.supplierName}</p>
+                  )}
+                  <datalist id="suppliers">
+                    {availableSuppliers.map(s => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
+
+                <div>
+                  <label htmlFor="expectedDelivery" className="block text-sm font-medium text-slate-400 mb-2">
+                    Expected Delivery
+                  </label>
+                  <input
+                    id="expectedDelivery"
+                    type="date"
+                    name="expectedDelivery"
+                    value={formData.expectedDelivery}
+                    onChange={handleChange}
+                    className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Expected Delivery */}
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Expected Delivery</label>
-            <input
-              type="date"
-              name="expectedDelivery"
-              value={formData.expectedDelivery}
-              onChange={handleChange}
-              className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-green-500"
-            />
+          {/* Status Section */}
+          <div className="bg-gray-900/50 border border-gray-700 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 border-b border-gray-700 pb-3">Order Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-slate-400 mb-2">Order Status</label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-500 transition-all"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Partially Received">Partially Received</option>
+                  <option value="Received">Received</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="paymentStatus" className="block text-sm font-medium text-slate-400 mb-2">Payment Status</label>
+                <select
+                  id="paymentStatus"
+                  name="paymentStatus"
+                  value={formData.paymentStatus}
+                  onChange={handleChange}
+                  className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-500 transition-all"
+                >
+                  <option value="Unpaid">Unpaid</option>
+                  <option value="Partially Paid">Partially Paid</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          {/* Products */}
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-4">Products to Order</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {/* Products Section */}
+          <div className="bg-gray-900/50 border border-gray-700 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-6 border-b border-gray-700 pb-3">Products to Order</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 max-h-96 overflow-y-auto">
               {products.map(product => {
                 const isSelected = formData.selectedProducts.some(p => p.id === product.id)
                 return (
                   <div 
                     key={product.id}
                     onClick={() => handleProductToggle(product)}
-                    className={`p-4 border rounded-xl cursor-pointer hover:shadow-lg transition-all ${
+                    className={`p-5 border-2 rounded-2xl cursor-pointer hover:shadow-xl transition-all group ${
                       isSelected 
-                        ? 'border-green-500 bg-green-500/5' 
-                        : 'border-gray-700 hover:border-gray-500'
+                        ? 'border-green-500 bg-green-500/10 ring-2 ring-green-500/30 shadow-green-500/25' 
+                        : 'border-gray-700 hover:border-gray-500 hover:bg-gray-800/50'
                     }`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleProductToggle(product)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-white">{product.name}</p>
-                        <p className="text-sm text-slate-400">₹{product.price}</p>
+                        <p className="font-semibold text-white group-hover:text-green-400 transition-colors">{product.name}</p>
+                        <p className="text-sm text-slate-400 mt-1">₹{product.price.toLocaleString()}</p>
                       </div>
-                      {isSelected && <span className="text-green-400">✓</span>}
+                      {isSelected && <span className="text-green-400 text-lg font-bold">✓</span>}
                     </div>
                   </div>
                 )
               })}
             </div>
 
-            {/* Selected products with quantities */}
-            {formData.selectedProducts.map(product => (
-              <div key={product.id} className="p-4 bg-gray-900 rounded-xl border border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-white">{product.name}</p>
-                    <p className="text-sm text-slate-400">₹{product.price} x</p>
+            {/* Selected products list */}
+            <div className="space-y-3">
+              {formData.selectedProducts.length > 0 ? (
+                formData.selectedProducts.map(product => (
+                  <div key={product.id} className="p-5 bg-gray-800/50 rounded-2xl border border-green-500/30 shadow-lg">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="font-semibold text-white text-lg">{product.name}</p>
+                        <p className="text-sm text-slate-400">Unit Price: ₹{product.price.toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center bg-gray-900/80 rounded-xl border border-gray-600 p-1">
+                          <button
+                            type="button"
+                            onClick={() => decrementQuantity(product.id)}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-gray-700 rounded-lg transition-all flex-shrink-0"
+                            aria-label="Decrease quantity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={product.quantity}
+                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                            className="w-16 p-2 text-lg font-medium bg-transparent border-0 text-center text-white focus:outline-none focus:ring-1 focus:ring-green-500 [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label={`Quantity for ${product.name}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => incrementQuantity(product.id)}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-gray-700 rounded-lg transition-all flex-shrink-0"
+                            aria-label="Increase quantity"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        </div>
+                        <span className="text-xl font-bold text-green-400 min-w-[100px] text-right">
+                          ₹{(product.price * product.quantity).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-<div className="flex items-center bg-gray-800 rounded-lg border border-gray-600">
-                    <button
-                    type='button'
-                      onClick={() => decrementQuantity(product.id)}
-                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-l-lg transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
-                      </svg>
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      value={product.quantity}
-                      onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                      className="w-12 px-1 py-1 text-sm bg-transparent border-x border-gray-600 rounded-none text-white text-center focus:outline-none focus:ring-0"
-                    />
-                    <button
-                    type='button'
-                      onClick={() => incrementQuantity(product.id)}
-                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-r-lg transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
-                  </div>
-                    <span className="text-white font-medium">
-                      ₹{(product.price * product.quantity).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                ))
+              ) : (
+                <p className="text-center py-8 text-slate-500 text-lg">No products selected yet</p>
+              )}
+            </div>
+            </div>
 
-          {/* Total & Notes */}
-          <div className="space-y-4">
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+          {/* Subtotal & Notes */}
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-500/5 to-emerald-500/5 border border-green-500/30 rounded-2xl p-6 shadow-2xl">
               <div className="flex justify-between items-center">
-                <span className="text-green-400 font-medium">Total Cost:</span>
-                <span className="text-2xl font-bold text-green-400">
+                <span className="text-xl font-semibold text-green-400">Total Cost</span>
+                <span className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
                   ₹{calculateTotal().toLocaleString()}
                 </span>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-2">Notes</label>
+              <label htmlFor="notes" className="block text-sm font-medium text-slate-400 mb-2">Notes (Optional)</label>
               <textarea
+                id="notes"
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                rows={3}
-                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-green-500"
+                rows={4}
+                className="w-full p-4 bg-gray-900 border border-gray-700 rounded-2xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:border-gray-500 transition-all resize-vertical"
+                placeholder="Additional notes about this purchase order..."
               />
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-gray-800">
+          {errors.products && (
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl">
+              <p className="text-sm text-red-400 font-medium">{errors.products}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-6 border-t border-gray-800">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 p-3 text-slate-400 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
+              disabled={isSubmitting}
+              className="flex-1 p-4 text-slate-400 border-2 border-gray-700 rounded-xl hover:border-gray-500 hover:bg-gray-800 hover:text-white transition-all font-medium disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={formData.selectedProducts.length === 0}
-              className="flex-1 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium transition-colors"
+              disabled={isSubmitting || formData.selectedProducts.length === 0}
+              className="flex-1 p-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-bold shadow-lg hover:from-green-700 hover:to-green-800 focus:ring-4 focus:ring-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
             >
-              {poToEdit ? 'Update PO' : 'Create PO'}
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={poToEdit ? 'M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z' : 'M12 4v16m8-8H4'} />
+                  </svg>
+                  {poToEdit ? 'Update PO' : 'Create PO'}
+                </>
+              )}
             </button>
           </div>
         </form>

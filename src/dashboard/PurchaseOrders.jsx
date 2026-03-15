@@ -71,6 +71,7 @@ const PurchaseOrders = () => {
         totalCost: po.total_cost || 0,
         expectedDate: po.expected_delivery ? new Date(po.expected_delivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
         status: po.status || 'Pending',
+        paymentStatus: po.payment_status || 'Unpaid',
         notes: po.notes || '',
         created_at: po.created_at,
         updated_at: po.updated_at
@@ -114,23 +115,34 @@ const PurchaseOrders = () => {
     }
   }, [user])
 
-  // Status badge helper
+// Status badge helper
   const getStatusBadge = (status) => {
     switch (status) {
       case 'Received':
-        return 'bg-emerald-500/10 text-emerald-400'
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
       case 'Pending':
-        return 'bg-yellow-500/10 text-yellow-400'
+        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
       case 'Cancelled':
-        return 'bg-red-500/10 text-red-400'
+        return 'bg-red-500/10 text-red-400 border-red-500/30'
       case 'Partially Received':
-        return 'bg-blue-500/10 text-blue-400'
+        return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
       default:
-        return 'bg-gray-500/10 text-gray-400'
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30'
     }
   }
 
-
+  const getPaymentStatusBadge = (status) => {
+    switch (status) {
+      case 'Paid':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+      case 'Unpaid':
+        return 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+      case 'Partially Paid':
+        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+      default:
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+    }
+  }
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-IN', {
@@ -163,7 +175,12 @@ const PurchaseOrders = () => {
 
   // Handlers
   const handleEditPO = (po) => {
-    setPoToEdit(po)
+    setPoToEdit({
+      ...po,
+      supplierName: po.supplier,
+      status: po.status,
+      paymentStatus: po.paymentStatus
+    })
     setIsPOModalOpen(true)
   }
 
@@ -228,6 +245,7 @@ const PurchaseOrders = () => {
         products: poData.selectedProducts,
         total_cost: parseFloat(poData.totalCost) || 0,
         status: poData.status || 'Pending',
+        payment_status: poData.paymentStatus || 'Unpaid',
         expected_delivery: poData.expectedDelivery,
         notes: poData.notes
       };
@@ -385,6 +403,7 @@ const PurchaseOrders = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Cost</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Expected</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Payment</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -399,8 +418,13 @@ const PurchaseOrders = () => {
                     <td className="px-6 py-4 text-sm font-semibold text-white">{formatPrice(po.totalCost)}</td>
                     <td className="px-6 py-4 text-sm text-slate-400">{po.expectedDate}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-md text-xs font-medium ${getStatusBadge(po.status)}`}>
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadge(po.status)}`}>
                         {po.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusBadge(po.paymentStatus)}`}>
+                        {po.paymentStatus}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
@@ -423,7 +447,7 @@ const PurchaseOrders = () => {
                 ))}
                 {purchaseOrders.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
                       <svg className="h-12 w-12 mx-auto mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                       </svg>
