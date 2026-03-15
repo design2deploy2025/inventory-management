@@ -43,15 +43,37 @@ const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user 
     })
   }
 
-  const handleQuantityChange = (productId, qty) => {
-    const quantity = Math.max(1, parseInt(qty) || 1)
-    setFormData(prev => ({
-      ...prev,
-      selectedProducts: prev.selectedProducts.map(p => 
-        p.id === productId ? { ...p, quantity } : p
-      )
-    }))
-  }
+ const incrementQuantity = (productId) => {
+  setFormData(prev => ({
+    ...prev,
+    selectedProducts: prev.selectedProducts.map(p =>
+      p.id === productId
+        ? { ...p, quantity: (p.quantity || 1) + 1 }
+        : p
+    )
+  }))
+}
+
+ const handleQuantityChange = (productId, quantityStr) => {
+  const quantity = Math.max(1, parseInt(quantityStr) || 1)
+  setFormData(prev => ({
+    ...prev,
+    selectedProducts: prev.selectedProducts.map(p =>
+      p.id === productId ? { ...p, quantity } : p
+    )
+  }))
+}
+
+const decrementQuantity = (productId) => {
+  setFormData(prev => ({
+    ...prev,
+    selectedProducts: prev.selectedProducts.map(p =>
+      p.id === productId
+        ? { ...p, quantity: Math.max(1, (p.quantity || 1) - 1) }
+        : p
+    )
+  }))
+}
 
   const calculateTotal = () => {
     return formData.selectedProducts.reduce((total, p) => total + (p.price * p.quantity), 0)
@@ -59,12 +81,30 @@ const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user 
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    
+    // Validation
+    if (!formData.supplierName.trim()) {
+      alert('Please enter a supplier name')
+      return
+    }
+    if (formData.selectedProducts.length === 0) {
+      alert('Please select at least one product')
+      return
+    }
+    
     const poData = {
       ...formData,
       totalCost: calculateTotal(),
       userId: user.id,
       poToEditId: poToEdit?.poId
     }
+    
+    // Ensure quantities are integers
+    poData.selectedProducts = poData.selectedProducts.map(p => ({
+      ...p,
+      quantity: parseInt(p.quantity) || 1
+    }))
+    
     onSave(poData)
   }
 
@@ -145,13 +185,33 @@ const PurchaseOrderModal = ({ isOpen, onClose, onSave, onUpdate, poToEdit, user 
                     <p className="text-sm text-slate-400">₹{product.price} x</p>
                   </div>
                   <div className="flex items-center space-x-2">
+<div className="flex items-center bg-gray-800 rounded-lg border border-gray-600">
+                    <button
+                    type='button'
+                      onClick={() => decrementQuantity(product.id)}
+                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-l-lg transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                      </svg>
+                    </button>
                     <input
                       type="number"
                       min="1"
                       value={product.quantity}
                       onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                      className="w-16 p-2 bg-gray-800 border border-gray-600 rounded text-white text-center"
+                      className="w-12 px-1 py-1 text-sm bg-transparent border-x border-gray-600 rounded-none text-white text-center focus:outline-none focus:ring-0"
                     />
+                    <button
+                    type='button'
+                      onClick={() => incrementQuantity(product.id)}
+                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-gray-700 rounded-r-lg transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  </div>
                     <span className="text-white font-medium">
                       ₹{(product.price * product.quantity).toLocaleString()}
                     </span>

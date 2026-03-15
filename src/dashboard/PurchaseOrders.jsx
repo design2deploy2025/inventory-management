@@ -226,11 +226,13 @@ const PurchaseOrders = () => {
         user_id: user.id,
         supplier_name: poData.supplierName,
         products: poData.selectedProducts,
-        total_cost: poData.totalCost,
-        status: poData.status,
+        total_cost: parseFloat(poData.totalCost) || 0,
+        status: poData.status || 'Pending',
         expected_delivery: poData.expectedDelivery,
         notes: poData.notes
       };
+
+      console.log('Saving PO data:', supabaseData); // Debug log
 
       let result;
       if (poToEdit) {
@@ -242,21 +244,48 @@ const PurchaseOrders = () => {
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
-        // Create
-        result = await supabase
-          .from('purchase_orders')
-          .insert([supabaseData])
-          .select()
-          .single();
-        if (!result.data) throw new Error('Failed to create PO');
+        // Create with retry for po_number conflict
+        let attempts = 0;
+        const maxAttempts = 3;
+        while (attempts < maxAttempts) {
+          try {
+            result = await supabase
+              .from('purchase_orders')
+              .insert([supabaseData])
+              .select()
+              .single();
+            break;
+          } catch (insertErr) {
+            attempts++;
+            if (insertErr.message.includes('duplicate key value violates unique constraint "purchase_orders_po_number_key"') && attempts < maxAttempts) {
+              console.log(`PO number conflict (attempt ${attempts}), retrying...`);
+              await new Promise(resolve => setTimeout(resolve, 100));
+              continue;
+            }
+            throw insertErr;
+          }
+        }
+        if (!result?.data) throw new Error('Failed to create PO');
       }
 
       setIsPOModalOpen(false);
       setPoToEdit(null);
       fetchPurchaseOrders();
     } catch (err) {
-      console.error('Error saving PO:', err);
-      alert(`Failed to save PO: ${err.message}`);
+      console.error('Full PO save error:', err);
+      console.error('Supabase error code:', err.code);
+      console.error('Supabase error details:', err.details);
+      
+      let userMessage = `Failed to save PO: ${err.message}`;
+      if (err.message.includes('supplier_name')) {
+        userMessage = 'Supplier name is required and cannot be empty.';
+      } else if (err.message.includes('products')) {
+        userMessage = 'Invalid products data. Please select products and quantities.';
+      } else if (err.code === 'P0001') {
+        userMessage = 'Database constraint violation. Please check supplier/products data.';
+      }
+      
+      alert(userMessage);
     }
   }
 
