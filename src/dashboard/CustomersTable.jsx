@@ -363,9 +363,22 @@ const CustomersTable = () => {
       <div className="mt-6">
         <div className="bg-[#0A0A0A] border border-gray-800 shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-800">
-            <h2 className="text-xl font-semibold text-white">All Customers</h2>
-            <p className="text-sm text-slate-400 mt-1">Manage your WhatsApp & Instagram customers</p>
+          <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-white">All Customers</h2>
+              <p className="text-sm text-slate-400 mt-1">Manage your WhatsApp & Instagram customers</p>
+            </div>
+            
+            {/* Add Customer Button */}
+            <button
+              onClick={handleAddCustomer}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-lg hover:shadow-xl"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Customer
+            </button>
           </div>
 
           {/* Filter Bar */}
