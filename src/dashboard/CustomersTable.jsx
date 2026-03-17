@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import CustomerModal from './CustomerModal'
+import ImportCustomerModal from './ImportCustomerModal'
 import Pagination from './Pagination'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -19,6 +20,8 @@ const CustomersTable = () => {
   
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false)
   const [customerToEdit, setCustomerToEdit] = useState(null)
+  
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
@@ -173,6 +176,16 @@ const CustomersTable = () => {
 
   // Check if any filters are active
   const hasActiveFilters = searchTerm !== '' || sortBy !== 'name'
+
+  // Handle import customers
+  const handleOpenImportModal = () => {
+    setIsImportModalOpen(true)
+  }
+
+  const handleImportComplete = () => {
+    setIsImportModalOpen(false)
+    fetchCustomers(currentPage, true)
+  }
 
   // Handle adding new customer
   const handleAddCustomer = () => {
@@ -369,16 +382,29 @@ const CustomersTable = () => {
               <p className="text-sm text-slate-400 mt-1">Manage your WhatsApp & Instagram customers</p>
             </div>
             
-            {/* Add Customer Button */}
-            <button
-              onClick={handleAddCustomer}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-lg hover:shadow-xl"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Customer
-            </button>
+            <div className="flex gap-3">
+              {/* Add Customer Button */}
+              <button
+                onClick={handleAddCustomer}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-lg hover:shadow-xl"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Customer
+              </button>
+            
+              {/* Import Customers Button */}
+              <button
+                onClick={handleOpenImportModal}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-teal-600 to-emerald-600 rounded-lg hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-all shadow-lg hover:shadow-xl"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Import CSV
+              </button>
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -611,6 +637,14 @@ const CustomersTable = () => {
         onSave={handleSaveCustomer}
         onUpdate={handleUpdateCustomer}
         customerToEdit={customerToEdit}
+        user={user}
+      />
+
+      {/* Import Customer Modal */}
+      <ImportCustomerModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportComplete={handleImportComplete}
         user={user}
       />
     </div>
