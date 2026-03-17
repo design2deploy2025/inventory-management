@@ -47,6 +47,25 @@ function PublicRoute({ children }) {
   return children
 }
 
+// Admin Route Component - requires is_admin === true
+function AdminRoute({ children }) {
+  const { user, profile, loading, profileLoading } = useAuth()
+
+  if (loading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!user || !profile?.is_admin) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return children
+}
+
 const App = () => {
   return (
     <div>
@@ -64,7 +83,11 @@ const App = () => {
           </ProtectedRoute>
         } 
       />
-      <Route path="/xQmLpRzTaVnKeWsYdFuHjGcBiOlPkNmQrStUvWxYaZb" element={<RandomPage />} />
+      <Route path="/xQmLpRzTaVnKeWsYdFuHjGcBiOlPkNmQrStUvWxYaZb" element={
+        <AdminRoute>
+          <RandomPage />
+        </AdminRoute>
+      } />
     </Routes>
     </div>
   )
