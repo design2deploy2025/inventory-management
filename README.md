@@ -39,17 +39,21 @@
 ## 🚀 Features
 
 ### Core Business Features
-- ✅ **Product Management** - Full CRUD operations for products with categories, SKUs, pricing, and images
-- ✅ **Customer Management** - Track customers with lifetime value, repeat orders, and order history
-- ✅ **Order Management** - Create and manage orders with multiple payment statuses and order statuses
-- ✅ **Invoice Generation** - Generate professional PDF invoices with automatic numbering
-- ✅ **Stock Tracking** - Track inventory levels with stock history and low-stock alerts
+- ✅ **Real-time Tracking** - Monitor inventory levels across Instagram shops and locations
+- ✅ **Stock Alerts** - Instant notifications when stock runs low
+- ✅ **Order Sync** - Auto-sync orders from Instagram DMs/comments to inventory
+- ✅ **Product Management** - Full CRUD for products with categories, SKUs, pricing, images
+- ✅ **Customer Management** - Track customers, lifetime value, repeat orders, history (with import)
+- ✅ **Purchase Orders** - Manage supplier purchase orders and inventory replenishment
+- ✅ **Order Management** - Create/manage orders with payment/order statuses
+- ✅ **Invoice Generation** - Professional PDF invoices with auto-numbering
 
 ### Dashboard & Analytics
-- ✅ **Dashboard Home** - Overview with stat cards, charts, and recent activity
-- ✅ **Sales Analytics** - Visual charts showing sales trends and top-selling products
-- ✅ **Visitor Analytics** - Track visitor patterns and user engagement
-- ✅ **Performance Metrics** - Business performance insights
+- ✅ **Analytics Dashboard** - Detailed sales trends, best-sellers, inventory performance insights
+- ✅ **Dashboard Home** - Stat cards, charts (orders line, visitors area), recent activity
+- ✅ **Sales Analytics** - Visual charts: trends, top-selling products
+- ✅ **Visitor Analytics** - Track patterns and engagement
+- ✅ **Performance Metrics** - Business insights (time-period stats, stock summary)
 
 ### Productivity Tools
 - ✅ **Checklists** - Create and manage task lists
@@ -73,18 +77,18 @@
 
 | Category | Technology | Version |
 |----------|------------|---------|
-| **Frontend Framework** | React | 19.2.0 |
-| **Build Tool** | Vite | 7.2.4 |
-| **Styling** | Tailwind CSS | 4.1.18 |
-| **Routing** | React Router DOM | 7.13.0 |
-| **Backend/Auth** | Supabase | 2.95.3 |
-| **Charts** | ApexCharts | 5.3.6 |
-| **PDF Generation** | jsPDF | 4.1.0 |
-| **PDF Tables** | jsPDF-AutoTable | 5.0.7 |
-| **Email Service** | EmailJS | 4.4.1 |
-| **Icons** | React Icons / Heroicons | 5.5.0 / 2.2.0 |
-| **Utilities** | Lodash | 4.17.23 |
-| **Linting** | ESLint | 9.39.1 |
+| **Frontend Framework** | React | ^19.2.0 |
+| **Build Tool** | Vite | ^7.2.4 |
+| **Styling** | Tailwind CSS (w/ Vite plugin) | ^4.1.18 |
+| **Routing** | React Router DOM | ^7.13.0 |
+| **Backend/Auth/DB** | Supabase | ^2.95.3 |
+| **Charts** | ApexCharts + react-apexcharts | ^5.3.6 + ^1.9.0 |
+| **PDF Generation** | jsPDF + jsPDF-AutoTable | ^4.1.0 + ^5.0.7 |
+| **Email Service** | @emailjs/browser | ^4.4.1 |
+| **Icons** | React Icons + @heroicons/react | ^5.5.0 + ^2.2.0 |
+| **Data/CSV** | PapaParse + XLSX | ^5.5.3 + ^0.18.5 |
+| **Utilities** | Lodash | ^4.17.23 |
+| **Linting** | ESLint | ^9.39.1 |
 
 ---
 
